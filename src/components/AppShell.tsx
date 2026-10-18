@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useCurrentShop, useProducts, useSession } from "@/lib/hooks";
 import { quick } from "@/lib/motion";
 import { seedDemo } from "@/lib/demo";
-import { isCloudConfigured } from "@/lib/supabase";
+import { isCloudConfigured } from "@/lib/cloud";
 import { startSync } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 import { SyncStatus } from "./SyncStatus";

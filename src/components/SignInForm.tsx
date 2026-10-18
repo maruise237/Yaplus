@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthError, type AuthField, MIN_PASSWORD_LENGTH, signIn, signUp } from "@/lib/auth";
-import { isCloudConfigured } from "@/lib/supabase";
+import { isCloudConfigured } from "@/lib/cloud";
 
 export type AuthMode = "inscription" | "connexion";
 
@@ -34,7 +34,9 @@ export function SignInForm({
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; field: AuthField | null } | null>(null);
-  const refs = { name: useRef<HTMLInputElement>(null), phone: useRef<HTMLInputElement>(null), password: useRef<HTMLInputElement>(null) };
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const signingUp = mode === "inscription";
 
   const submit = async () => {
@@ -47,7 +49,7 @@ export function SignInForm({
     } catch (e) {
       const err = e instanceof AuthError ? e : new AuthError("Une erreur est survenue. Réessaie.");
       setError({ message: err.message, field: err.field });
-      if (err.field) refs[err.field].current?.focus();
+      if (err.field) ({ name: nameRef, phone: phoneRef, password: passwordRef })[err.field].current?.focus();
       setBusy(false);
     }
   };
@@ -67,7 +69,7 @@ export function SignInForm({
         <div className="grid gap-2.5">
           <Label htmlFor="name">Ton prénom</Label>
           <Input
-            ref={refs.name}
+            ref={nameRef}
             id="name"
             name="given-name"
             value={name}
@@ -84,7 +86,7 @@ export function SignInForm({
       <div className="grid gap-2.5">
         <Label htmlFor="phone">Ton numéro de téléphone</Label>
         <Input
-          ref={refs.phone}
+          ref={phoneRef}
           id="phone"
           name="tel"
           type="tel"
@@ -103,7 +105,7 @@ export function SignInForm({
         <Label htmlFor="password">Mot de passe</Label>
         <div className="relative">
           <Input
-            ref={refs.password}
+            ref={passwordRef}
             id="password"
             name="password"
             type={showPassword ? "text" : "password"}

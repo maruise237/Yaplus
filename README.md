@@ -3,7 +3,8 @@
 > Y'a plus ? Un tap, c'est noté. Le patron voit tout, même absent.
 
 Cahier de réapprovisionnement partagé pour boutiques : remplace le cahier papier et le groupe WhatsApp.
-PWA hors-ligne d'abord (Next.js + IndexedDB/Dexie), synchronisée avec Supabase. Spécification complète : [`docs/PRD.md`](docs/PRD.md).
+PWA hors-ligne d'abord (Next.js + IndexedDB/Dexie), synchronisée avec une API Next.js et Postgres **Neon**, hébergée sur **Vercel**.
+En ligne : https://yaplus-blush.vercel.app. Spécification complète : [`docs/PRD.md`](docs/PRD.md).
 
 ## Interface
 
@@ -12,7 +13,7 @@ PWA hors-ligne d'abord (Next.js + IndexedDB/Dexie), synchronisée avec Supabase.
 - Responsive : onglets en bas et feuilles du bas sur téléphone ; barre latérale et fenêtres centrées dès 768 px.
 - Mouvement uniquement en réponse à une action (tap, ouverture, confirmation), `prefers-reduced-motion` respecté.
 - Règles de design et méthode de travail : [`CLAUDE.md`](CLAUDE.md). Skills installés : `.claude/skills/impeccable` (pbakaus/impeccable, détecteur de tics IA) et `.claude/skills/frontend-design` (anthropics/skills).
-- **Démo** : ouvrir `/?demo=1` (sans Supabase configuré) remplit une boutique d'exemple sur l'appareil, pratique pour montrer l'app.
+- **Démo** : ouvrir `/?demo=1` (sans serveur branché) remplit une boutique d'exemple sur l'appareil, pratique pour montrer l'app.
 
 ## Démarrer
 
@@ -24,13 +25,20 @@ npm run dev        # http://localhost:3000
 Sans variables d'environnement, l'app tourne en **mode démo « sur cet appareil »** : connexion par prénom,
 tout reste dans le téléphone. Idéal pour montrer le geste en boutique.
 
-## Brancher Supabase (mode équipe)
+## Mode équipe : Vercel + Neon
 
-1. Créer un projet Supabase, puis exécuter `supabase/migrations/0001_init.sql` (SQL Editor ou `supabase db push`).
-2. Auth → Providers → **Email** : laisser activé et **désactiver « Confirm email »**.
-   Aucun fournisseur SMS ou WhatsApp n'est nécessaire : la connexion se fait par numéro + mot de passe.
-   Le numéro est converti en identifiant interne `<numéro>@tel.yaplus.app` (jamais affiché, aucun mail envoyé).
-3. Copier `.env.example` en `.env.local` et remplir `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Projet Vercel `yaplus` (équipe maruise237s-projects), base Neon `yaplus-db` (Francfort, offre gratuite)
+  branchée par l'intégration Vercel : `DATABASE_URL` et `DATABASE_URL_UNPOOLED` sont posées automatiquement.
+- Variables à ajouter : `AUTH_SECRET` (signature des sessions, 32 caractères minimum) et `NEXT_PUBLIC_CLOUD_SYNC=1`.
+- Schéma : `db/schema.sql`, rejouable, appliqué par `npm run db:migrate` (lit `.env.local`).
+- En local : `vercel env pull .env.local`, ajouter `AUTH_SECRET` et `NEXT_PUBLIC_CLOUD_SYNC=1`, puis `npm run dev`.
+- Déployer : `vercel deploy --prod`.
+
+Comptes : numéro + mot de passe, aucun SMS, aucun e-mail. Le serveur garde le mot de passe haché (scrypt),
+pose un cookie de session httpOnly valable un an, et freine les essais en rafale (8 échecs / 15 min par numéro).
+
+API (`src/app/api`) : `auth/signup`, `auth/signin`, `auth/signout`, `sync/push`, `sync/pull`, `invites`, `invites/accept`.
+La base n'est jamais exposée aux téléphones ; les droits par boutique sont vérifiés dans `src/server/rules.ts`.
 
 ## Ce qui est en place (v1)
 
@@ -44,9 +52,9 @@ tout reste dans le téléphone. Idéal pour montrer le geste en boutique.
 | Partage WhatsApp (`wa.me`, +237 par défaut) | `src/lib/whatsapp.ts` |
 | Clôture (patron) + historique figé | `src/lib/actions.ts` → `closeList`, `src/app/historique` |
 | Hors-ligne : IndexedDB + outbox + synchro par événement | `src/lib/db.ts`, `src/lib/sync.ts`, `public/sw.js` |
-| Temps réel, vue multi-boutiques | `src/lib/sync.ts` (Realtime), `src/app/boutique` |
+| Quasi temps réel (relève toutes les 15 s quand l'app est à l'écran), vue multi-boutiques | `src/lib/sync.ts`, `src/app/boutique` |
 | Connexion par numéro + mot de passe (sans code, sans fournisseur), invitations par lien | `src/lib/auth.ts`, `src/components/SignInForm.tsx`, `src/lib/invites.ts` |
-| RLS par boutique, seul le patron invite / retire / clôture | `supabase/migrations/0001_init.sql` |
+| Droits par boutique, seul le patron invite / retire / clôture | `src/server/rules.ts`, `db/schema.sql` |
 
 ### Synchronisation
 
@@ -58,7 +66,8 @@ tout reste dans le téléphone. Idéal pour montrer le geste en boutique.
 ## Scripts
 
 ```bash
-npm test           # tests unitaires (normalisation, WhatsApp, cycle signaler → clôturer)
+npm test           # tests unitaires (normalisation, WhatsApp, cycle signaler → clôturer, droits serveur)
+npm run db:migrate # applique db/schema.sql sur Neon
 npm run lint
 npm run typecheck
 npm run build
@@ -66,7 +75,6 @@ npm run build
 
 ## Reste à faire (plan de build)
 
-- Tester la migration SQL et l'inscription numéro + mot de passe sur un vrai projet Supabase.
-- Mot de passe oublié : réinitialisation par le patron (fonction serveur avec la clé service), à construire.
+- Mot de passe oublié : réinitialisation par le patron (route serveur), à construire.
 - Test terrain réseau coupé sur un vrai Android, empaquetage Play Store (Trusted Web Activity).
 - Notifications push web (rappels) — la v1 s'appuie sur le marqueur « oublié la dernière fois ».

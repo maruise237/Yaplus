@@ -1,7 +1,7 @@
 // Yaplus — service worker
 // Les données vivent dans IndexedDB ; ici on garde seulement l'app elle-même
 // pour qu'elle s'ouvre sans réseau.
-const VERSION = "yaplus-v3";
+const VERSION = "yaplus-v4";
 const SHELL = ["/", "/decouvrir", "/categorie", "/a-racheter", "/historique", "/boutique", "/connexion", "/bienvenue", "/rejoindre", "/manifest.webmanifest", "/icon-192.png", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -20,7 +20,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+  if (request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
   // Fichiers versionnés de Next : le cache d'abord, ils ne changent jamais.
   if (url.pathname.startsWith("/_next/static/")) {

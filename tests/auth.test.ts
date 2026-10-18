@@ -1,22 +1,12 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
-import { phoneToLogin, signIn, signUp } from "../src/lib/auth";
+import { signIn, signUp } from "../src/lib/auth";
 import { db } from "../src/lib/db";
 import { getSession, signOutLocal } from "../src/lib/session";
 
 beforeEach(async () => {
   await db.delete();
   await db.open();
-});
-
-describe("phoneToLogin", () => {
-  it("donne le même identifiant quelle que soit l'écriture du numéro", () => {
-    const id = "237699001122@tel.yaplus.app";
-    expect(phoneToLogin("6 99 00 11 22")).toBe(id);
-    expect(phoneToLogin("+237 699 00 11 22")).toBe(id);
-    expect(phoneToLogin("00237699001122")).toBe(id);
-    expect(phoneToLogin("12")).toBeNull();
-  });
 });
 
 describe("numéro + mot de passe (mode sur cet appareil)", () => {

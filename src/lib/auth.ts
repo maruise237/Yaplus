@@ -1,22 +1,14 @@
+import { MIN_PASSWORD_LENGTH } from "./auth-rules";
+import { api, ApiError, isCloudConfigured } from "./cloud";
 import { getMeta, setMeta } from "./db";
 import { saveSession } from "./session";
-import { getSupabase, isCloudConfigured } from "./supabase";
 import { syncNow } from "./sync";
 import { normalizePhone } from "./whatsapp";
 
 // Connexion par numéro de téléphone + mot de passe, sans code SMS ni WhatsApp :
-// aucun fournisseur d'envoi, aucun coût par connexion.
-//
-// Supabase ne sait gérer le téléphone qu'avec un fournisseur SMS. On passe donc par sa connexion
-// e-mail + mot de passe, avec un identifiant interne dérivé du numéro. L'utilisateur ne voit
-// jamais cet identifiant. Prérequis côté Supabase : désactiver « Confirm email » (voir README).
-export const PHONE_LOGIN_DOMAIN = "tel.yaplus.app";
-export const MIN_PASSWORD_LENGTH = 6;
-
-export function phoneToLogin(phone: string): string | null {
-  const digits = normalizePhone(phone);
-  return digits ? `${digits}@${PHONE_LOGIN_DOMAIN}` : null;
-}
+// aucun fournisseur d'envoi, aucun coût par connexion. Le serveur garde le mot de passe
+// haché (scrypt) et pose un cookie de session ; voir src/app/api/auth.
+export { MIN_PASSWORD_LENGTH };
 
 export type AuthField = "name" | "phone" | "password";
 
@@ -54,20 +46,10 @@ export async function signUp({ name, phone, password }: { name: string; phone: s
     return;
   }
 
-  const { data, error } = await getSupabase()!.auth.signUp({
-    email: phoneToLogin(digits)!,
-    password,
-    options: { data: { display_name: displayName, phone: `+${digits}` } },
+  const user = await callAuth("/api/auth/signup", { name: displayName, phone: digits, password }, {
+    phone_taken: new AuthError("Ce numéro a déjà un compte. Connecte-toi.", "phone"),
   });
-  if (error) {
-    if (/already registered|already exists/i.test(error.message)) throw new AuthError("Ce numéro a déjà un compte. Connecte-toi.", "phone");
-    throw new AuthError("Le compte n’a pas pu être créé. Vérifie ta connexion et réessaie.");
-  }
-  if (!data.session || !data.user) {
-    // La confirmation par e-mail est encore active dans Supabase : personne ne recevrait ce mail.
-    throw new AuthError("Inscription bloquée par la configuration du serveur. Préviens l’administrateur.");
-  }
-  await saveSession({ userId: data.user.id, displayName, phone: `+${digits}`, mode: "cloud" });
+  await saveSession({ ...user, mode: "cloud" });
   await syncNow();
 }
 
@@ -81,14 +63,24 @@ export async function signIn({ phone, password }: { phone: string; password: str
     return;
   }
 
-  const { data, error } = await getSupabase()!.auth.signInWithPassword({ email: phoneToLogin(digits)!, password });
-  if (error || !data.user) {
-    if (error && /invalid login credentials/i.test(error.message)) throw new AuthError("Numéro ou mot de passe incorrect.");
-    throw new AuthError("Connexion impossible. Vérifie ta connexion et réessaie.");
-  }
-  const displayName = (data.user.user_metadata?.display_name as string | undefined) ?? "Moi";
-  await saveSession({ userId: data.user.id, displayName, phone: `+${digits}`, mode: "cloud" });
+  const user = await callAuth("/api/auth/signin", { phone: digits, password }, {
+    invalid_credentials: new AuthError("Numéro ou mot de passe incorrect."),
+    too_many_attempts: new AuthError("Trop d’essais. Attends 15 minutes, puis réessaie."),
+  });
+  await saveSession({ ...user, mode: "cloud" });
   await syncNow();
+}
+
+type ServerUser = { userId: string; displayName: string; phone: string };
+
+async function callAuth(path: string, body: object, known: Record<string, AuthError>): Promise<ServerUser> {
+  try {
+    return await api<ServerUser>(path, body);
+  } catch (e) {
+    if (e instanceof ApiError && known[e.code]) throw known[e.code];
+    if (e instanceof ApiError && e.offline) throw new AuthError("Pas de réseau. La première connexion demande internet.");
+    throw new AuthError("Le serveur ne répond pas. Réessaie dans un instant.");
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -1,27 +1,13 @@
-import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
-import { db, getMeta, setMeta, SYNCED_TABLES, type SyncedTable } from "./db";
 import { onLocalChange } from "./actions";
+import { api, ApiError, isCloudConfigured } from "./cloud";
+import { db, getMeta, setMeta, SYNCED_TABLES, type SyncedTable } from "./db";
 import { getSession } from "./session";
-import { getSupabase } from "./supabase";
 
 // Synchro produit par produit, événement par événement, jamais la liste entière.
 // 1. push : on vide l'outbox dans l'ordre.
 // 2. pull : on récupère ce qui a changé côté serveur depuis le dernier curseur (synced_at).
 
-const PRIMARY_KEYS: Record<SyncedTable, string> = {
-  shops: "id",
-  shop_members: "shop_id,user_id",
-  categories: "id",
-  products: "id",
-  product_events: "id",
-  closures: "id",
-  closure_items: "id",
-};
-
-// Tables en ajout seul : un doublon (renvoi après coupure) est simplement ignoré.
-const APPEND_ONLY = new Set<SyncedTable>(["product_events", "closures", "closure_items"]);
-
-const PAGE = 500;
+const BATCH = 50;
 
 export type SyncState = { syncing: boolean; lastSyncAt: string | null; lastError: string | null };
 
@@ -41,34 +27,31 @@ function setState(patch: Partial<SyncState>) {
   subscribers.forEach((fn) => fn());
 }
 
-function isNetworkError(error: { message?: string; code?: string } | null): boolean {
-  if (!error) return false;
-  if (typeof navigator !== "undefined" && !navigator.onLine) return true;
-  return !error.code || /fetch|network|timeout/i.test(error.message ?? "");
-}
+type PushResult = { ok: true } | { ok: false; error: string };
 
-export async function pushOutbox(client: SupabaseClient): Promise<void> {
+export async function pushOutbox(): Promise<void> {
   for (;;) {
-    const batch = await db.outbox.orderBy("seq").filter((e) => !e.error).limit(50).toArray();
+    const batch = await db.outbox.orderBy("seq").filter((e) => !e.error).limit(BATCH).toArray();
     if (!batch.length) return;
 
-    for (const entry of batch) {
-      const query = client.from(entry.table).upsert(entry.row, {
-        onConflict: PRIMARY_KEYS[entry.table],
-        ignoreDuplicates: APPEND_ONLY.has(entry.table),
-      });
-      const { error } = await query;
-      if (error && isNetworkError(error)) {
-        await db.outbox.update(entry.seq!, { attempts: entry.attempts + 1 });
-        throw new Error("offline");
-      }
-      if (error) {
-        // Refus du serveur (droits, contrainte) : on garde l'action, marquée, sans bloquer la file.
-        await db.outbox.update(entry.seq!, { attempts: entry.attempts + 1, error: error.message });
-        continue;
-      }
-      await db.outbox.delete(entry.seq!);
+    let results: PushResult[];
+    try {
+      ({ results } = await api<{ results: PushResult[] }>("/api/sync/push", {
+        entries: batch.map((e) => ({ table: e.table, row: e.row })),
+      }));
+    } catch (e) {
+      await db.outbox.bulkUpdate(batch.map((entry) => ({ key: entry.seq!, changes: { attempts: entry.attempts + 1 } })));
+      throw e;
     }
+
+    await db.transaction("rw", db.outbox, async () => {
+      for (const [i, entry] of batch.entries()) {
+        const result = results[i];
+        if (result?.ok) await db.outbox.delete(entry.seq!);
+        // Refus du serveur (droits, contrainte) : on garde l'action, marquée, sans bloquer la file.
+        else await db.outbox.update(entry.seq!, { attempts: entry.attempts + 1, error: result?.error ?? "no_result" });
+      }
+    });
   }
 }
 
@@ -76,19 +59,23 @@ function localKey(table: SyncedTable, row: Record<string, unknown>) {
   return table === "shop_members" ? [row.shop_id, row.user_id] : row.id;
 }
 
-export async function pullChanges(client: SupabaseClient): Promise<void> {
-  for (const table of SYNCED_TABLES) {
-    const cursorKey = `cursor:${table}`;
-    let cursor = await getMeta<string>(cursorKey);
-    for (;;) {
-      let query = client.from(table).select("*").order("synced_at", { ascending: true }).limit(PAGE);
-      if (cursor) query = query.gte("synced_at", cursor);
-      const { data, error } = await query;
-      if (error) throw new Error(isNetworkError(error) ? "offline" : error.message);
-      if (!data.length) break;
+export async function pullChanges(): Promise<void> {
+  let pending = [...SYNCED_TABLES];
+  while (pending.length) {
+    const cursors: Record<string, string | undefined> = {};
+    for (const table of pending) cursors[table] = await getMeta<string>(`cursor:${table}`);
+    const { tables, page } = await api<{ tables: Partial<Record<SyncedTable, Record<string, unknown>[]>>; page: number }>(
+      "/api/sync/pull",
+      { cursors },
+    );
 
+    const next: SyncedTable[] = [];
+    // Les parents avant les enfants, comme à l'envoi.
+    for (const table of pending) {
+      const rows = tables[table] ?? [];
+      if (!rows.length) continue;
       await db.transaction("rw", db.table(table), async () => {
-        for (const row of data as Record<string, unknown>[]) {
+        for (const row of rows) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const local = await db.table(table).get(localKey(table, row) as any);
           // Une modification locale plus récente, pas encore envoyée, gagne.
@@ -96,12 +83,11 @@ export async function pullChanges(client: SupabaseClient): Promise<void> {
           await db.table(table).put(row);
         }
       });
-
-      const last = String(data[data.length - 1].synced_at);
-      await setMeta(cursorKey, last);
-      if (data.length < PAGE || last === cursor) break;
-      cursor = last;
+      const last = String(rows[rows.length - 1].synced_at);
+      await setMeta(`cursor:${table}`, last);
+      if (rows.length >= page && last !== cursors[table]) next.push(table);
     }
+    pending = next;
   }
 }
 
@@ -119,22 +105,19 @@ export function syncNow(): Promise<void> {
     return running;
   }
   running = (async () => {
-    const client = getSupabase();
     const session = await getSession();
-    if (!client || session?.mode !== "cloud") return;
-    const { data } = await client.auth.getSession();
-    if (!data.session) return;
+    if (!isCloudConfigured || session?.mode !== "cloud") return;
 
     setState({ syncing: true });
     try {
       do {
         again = false;
-        await pushOutbox(client);
-        await pullChanges(client);
+        await pushOutbox();
+        await pullChanges();
       } while (again);
       setState({ lastSyncAt: new Date().toISOString(), lastError: null });
     } catch (e) {
-      setState({ lastError: e instanceof Error ? e.message : String(e) });
+      setState({ lastError: e instanceof ApiError && e.offline ? "offline" : e instanceof Error ? e.message : String(e) });
     } finally {
       setState({ syncing: false });
     }
@@ -147,7 +130,9 @@ export function syncNow(): Promise<void> {
 let started = false;
 
 // Démarre la synchro automatique : changement local, retour du réseau, retour sur l'app,
-// temps réel Supabase, et un filet de sécurité toutes les 30 secondes.
+// et une relève régulière tant que l'app est à l'écran (le patron voit les signalements arriver).
+const POLL_MS = 15_000;
+
 export function startSync(): () => void {
   if (started || typeof window === "undefined") return () => {};
   started = true;
@@ -162,17 +147,8 @@ export function startSync(): () => void {
   const onVisible = () => document.visibilityState === "visible" && soon();
   window.addEventListener("online", soon);
   document.addEventListener("visibilitychange", onVisible);
-  const interval = setInterval(soon, 30_000);
-
-  let channel: RealtimeChannel | null = null;
-  const client = getSupabase();
-  if (client) {
-    channel = client.channel("yaplus-shop");
-    for (const table of ["products", "categories", "shop_members", "closures"]) {
-      channel.on("postgres_changes", { event: "*", schema: "public", table }, soon);
-    }
-    channel.subscribe();
-  }
+  // Écran éteint ou app en arrière-plan : pas de relève, pas de données consommées.
+  const interval = setInterval(() => document.visibilityState === "visible" && navigator.onLine && soon(), POLL_MS);
 
   soon();
 
@@ -182,6 +158,5 @@ export function startSync(): () => void {
     window.removeEventListener("online", soon);
     document.removeEventListener("visibilitychange", onVisible);
     clearInterval(interval);
-    if (channel) void client?.removeChannel(channel);
   };
 }

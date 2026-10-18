@@ -98,7 +98,7 @@ Ces règles sont tranchées et servent de référence pour le build.
 
 ## Modèle de données
 
-Base Postgres (Supabase). Tous les identifiants sont des UUID générés sur l'appareil, pour qu'un produit créé hors-ligne existe avant même d'avoir touché le serveur. Chaque table porte `updated_at` et un `archived_at` à la place d'une vraie suppression.
+Base Postgres (Neon, via Vercel). Tous les identifiants sont des UUID générés sur l'appareil, pour qu'un produit créé hors-ligne existe avant même d'avoir touché le serveur. Chaque table porte `updated_at` et un `archived_at` à la place d'une vraie suppression.
 
 | Table | Rôle | Champs principaux |
 | --- | --- | --- |
@@ -121,15 +121,15 @@ Points de conception à retenir :
 
 ## Architecture technique
 
-PWA offline-first sur Next.js et Supabase, qui reste dans ta stack actuelle. Android passe d'abord par l'installation de la PWA, puis par un empaquetage Play Store.
+PWA offline-first sur Next.js, Vercel et Postgres Neon. Android passe d'abord par l'installation de la PWA, puis par un empaquetage Play Store.
 
 | Brique | Choix | Pourquoi |
 | --- | --- | --- |
 | Interface | Next.js en PWA installable | Une seule base de code pour web et Android |
 | Stockage local | IndexedDB (via Dexie) | Tout le cahier est lisible et modifiable sans réseau |
 | File d'attente | Une "outbox" locale des actions non envoyées | Chaque action part dès que le réseau revient, dans l'ordre |
-| Backend | Supabase (Postgres, Auth, Realtime) | Auth, base, temps réel et règles de sécurité dans un seul outil |
-| Temps réel | Supabase Realtime sur la boutique | Le patron voit les signalements arriver sans recharger |
+| Backend | API Next.js sur Vercel + Postgres Neon | Une seule app à déployer ; comptes et droits gérés par l'API |
+| Temps réel | Relève toutes les 15 s quand l'app est ouverte | Le patron voit les signalements arriver sans recharger |
 | Connexion | Numéro de téléphone + mot de passe, sans code SMS ni WhatsApp | Aucun fournisseur d'envoi à payer ; le numéro sert d'identifiant |
 | Partage | Lien `wa.me` avec message encodé | Aucune API payante, fonctionne sur tout téléphone avec WhatsApp |
 | Rappels | Notifications push web sur Android | iOS reste limité, le marqueur dans l'app fait office de rappel |
@@ -145,7 +145,7 @@ PWA offline-first sur Next.js et Supabase, qui reste dans ta stack actuelle. And
 
 Cinq semaines pour une v1 utilisable en vraie boutique, en solo. Chaque étape finit par quelque chose que tu peux montrer à ton cousin.
 
-1. **Semaine 1, socle.** Projet Next.js et Supabase, connexion par numéro et mot de passe, boutiques, membres, règles de sécurité. Tu peux créer une boutique et inviter quelqu'un.
+1. **Semaine 1, socle.** Projet Next.js, Vercel et Neon, connexion par numéro et mot de passe, boutiques, membres, règles de sécurité. Tu peux créer une boutique et inviter quelqu'un.
 2. **Semaine 2, le cahier.** Catégories, produits, signalement en un tap, vue "À racheter", suggestion anti-doublon. Utilisable en ligne, avec le design final de la grille.
 3. **Semaine 3, hors-ligne.** IndexedDB, outbox, synchro par événement, indicateur "en attente", installation PWA. Test avec le réseau coupé sur un vrai téléphone Android.
 4. **Semaine 4, partage et clôture.** Message WhatsApp par catégorie, clôture, historique, marqueur "oublié", vue patron multi-boutiques en temps réel.

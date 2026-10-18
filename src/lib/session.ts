@@ -4,7 +4,7 @@ export type Session = {
   userId: string;
   displayName: string;
   phone: string | null;
-  // "local" : pas de Supabase configuré, tout reste sur l'appareil (démo, tests terrain).
+  // "local" : pas de serveur branché, tout reste sur l'appareil (démo, tests terrain).
   mode: "local" | "cloud";
 };
 

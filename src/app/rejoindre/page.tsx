@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/lib/hooks";
 import { acceptInvite } from "@/lib/invites";
-import { isCloudConfigured } from "@/lib/supabase";
+import { isCloudConfigured } from "@/lib/cloud";
 
 function Join() {
   const router = useRouter();

@@ -10,11 +10,12 @@ import { ResponsiveSheet } from "@/components/ResponsiveSheet";
 import { TextFieldDialog } from "@/components/TextFieldDialog";
 import { Button } from "@/components/ui/button";
 import { createShop, removeMember, renameMember, renameShop } from "@/lib/actions";
+import { api, isCloudConfigured } from "@/lib/cloud";
 import { db, type ShopMember } from "@/lib/db";
 import { useCurrentShop, useMembers } from "@/lib/hooks";
 import { createInvite, inviteLink } from "@/lib/invites";
 import { saveSession, setCurrentShopId, signOutLocal } from "@/lib/session";
-import { getSupabase, isCloudConfigured } from "@/lib/supabase";
+import { syncNow } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
 
@@ -57,7 +58,11 @@ export default function BoutiquePage() {
   const team = [...(members?.values() ?? [])].filter((m) => !m.removed_at).sort((a, b) => Number(b.role === "owner") - Number(a.role === "owner"));
 
   const signOut = async () => {
-    await getSupabase()?.auth.signOut();
+    if (isCloudConfigured) {
+      // Dernier envoi avant d'effacer l'appareil, puis fin de la session serveur.
+      await syncNow();
+      await api("/api/auth/signout").catch(() => {});
+    }
     await signOutLocal();
     router.replace("/connexion");
   };
