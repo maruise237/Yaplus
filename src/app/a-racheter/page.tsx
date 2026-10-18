@@ -194,7 +194,7 @@ function BuyRow({ product, members, onMore }: { product: Product; members?: Map<
               id={id}
               checked={isBought}
               onCheckedChange={(v) => void setBought(product.id, v === true)}
-              className="size-6 rounded-md border-input bg-background data-checked:border-success data-checked:bg-success dark:data-checked:bg-success data-checked:text-white [&_svg]:size-4!"
+              className="size-6 rounded-md border-input bg-card data-checked:border-success data-checked:bg-success dark:data-checked:bg-success data-checked:text-white [&_svg]:size-4!"
             />
           </span>
           <span className="min-w-0 flex-1 pl-3">

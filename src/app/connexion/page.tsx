@@ -8,9 +8,9 @@ export default function ConnexionPage() {
     <div className="grid gap-8">
       <Wordmark />
       <div>
-        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Le cahier de la boutique</h1>
+        <h1 className="text-[1.875rem] leading-tight font-semibold tracking-tight">Y a plus ? On le note.</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
-          Quand un produit est fini, touche-le. Le patron voit la liste à jour, même à distance.
+          Chaque employé signale ce qui manque en un geste. Le patron voit la liste en direct, même sans connexion, puis l’envoie sur WhatsApp.
         </p>
       </div>
       <SignInForm />

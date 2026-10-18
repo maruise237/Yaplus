@@ -168,23 +168,21 @@ function SideLink({ item, active, count }: { item: NavItem; active: boolean; cou
   );
 }
 
+// Marque « Y+ » du kit (docs/brand/logo/mark-blue.svg), en bleu de marque.
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <span
-      className={cn("grid size-7 shrink-0 place-items-center rounded-[7px] bg-primary text-[13px] font-bold text-primary-foreground", className)}
-      aria-hidden
-      translate="no"
-    >
-      Y
-    </span>
+    <svg viewBox="2 2 96 96" className={cn("size-7 shrink-0 text-brand", className)} aria-hidden>
+      <path fill="currentColor" d="M6 6H31L64 58.25V96H40V59.8ZM66.5 6H81.5V19.5H95V34.5H81.5V48H66.5V34.5H53V19.5H66.5Z" />
+    </svg>
   );
 }
 
-export function Wordmark() {
+export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className="flex items-center gap-2.5" translate="no">
+    <span className={cn("flex items-center gap-2", className)} translate="no">
       <LogoMark />
-      <span className="text-[17px] font-semibold tracking-tight">Yaplus</span>
+      <span className="text-[22px] leading-none font-semibold tracking-tight">Yaplus</span>
+      <span className="sr-only">, le cahier de réapprovisionnement</span>
     </span>
   );
 }

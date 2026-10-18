@@ -1,8 +1,8 @@
 // Yaplus — service worker
 // Les données vivent dans IndexedDB ; ici on garde seulement l'app elle-même
 // pour qu'elle s'ouvre sans réseau.
-const VERSION = "yaplus-v1";
-const SHELL = ["/", "/categorie", "/a-racheter", "/historique", "/boutique", "/connexion", "/bienvenue", "/rejoindre", "/manifest.webmanifest", "/icon-192.png"];
+const VERSION = "yaplus-v2";
+const SHELL = ["/", "/categorie", "/a-racheter", "/historique", "/boutique", "/connexion", "/bienvenue", "/rejoindre", "/manifest.webmanifest", "/icon-192.png", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));

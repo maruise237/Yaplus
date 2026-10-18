@@ -8,7 +8,7 @@ PWA hors-ligne d'abord (Next.js + IndexedDB/Dexie), synchronisée avec Supabase.
 ## Interface
 
 - Composants **shadcn/ui** (Radix) dans `src/components/ui`, icônes **Lucide**, animations **Motion** (`motion/react`), notifications **Sonner**.
-- Direction « le cahier » : papier, encre bleue, marge rouge pour les produits à racheter. Police **Lexend**, conçue pour faciliter la lecture.
+- Identité : kit de marque v1 dans `docs/brand` (logo « Y+ », bleu `#0B7BE0`, anthracite, police **Outfit**). Le rouge marque uniquement les produits à racheter.
 - Responsive : onglets en bas et feuilles du bas sur téléphone ; barre latérale et fenêtres centrées dès 768 px.
 - Mouvement uniquement en réponse à une action (tap, ouverture, confirmation), `prefers-reduced-motion` respecté.
 - Règles de design et méthode de travail : [`CLAUDE.md`](CLAUDE.md). Skills installés : `.claude/skills/impeccable` (pbakaus/impeccable, détecteur de tics IA) et `.claude/skills/frontend-design` (anthropics/skills).

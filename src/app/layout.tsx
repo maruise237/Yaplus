@@ -1,23 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Lexend } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
-// Lexend : conçue pour faciliter la lecture, y compris pour les lecteurs en difficulté.
-const font = Lexend({ subsets: ["latin"], variable: "--font-app", display: "swap" });
+// Outfit : la police du logotype (kit de marque v1).
+const font = Outfit({ subsets: ["latin"], variable: "--font-app", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Yaplus",
   description: "Le cahier de réapprovisionnement partagé de la boutique.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Yaplus", statusBarStyle: "default" },
-  icons: { icon: "/icon-192.png", apple: "/icon-192.png" },
+  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }], apple: "/apple-touch-icon-180.png" },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfcfe" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1424" },
+    { media: "(prefers-color-scheme: light)", color: "#f8f7f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#1e1e1e" },
   ],
   width: "device-width",
   initialScale: 1,

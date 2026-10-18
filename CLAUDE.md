@@ -21,22 +21,25 @@ Utilisateurs : employés de boutique, parfois peu à l'aise à l'écrit, une mai
 5. Référence : Vercel Web Interface Guidelines (cibles ≥ 44px, inputs ≥ 16px, pas d'autofocus mobile,
    `prefers-reduced-motion`, jamais `transition: all`, états vides / erreur / chargement conçus).
 
-## Direction visuelle : « le cahier »
+## Identité : kit de marque Yaplus v1 (`docs/brand`)
 
-L'app remplace un cahier d'écolier : on en reprend les codes, sans pastiche.
+Le kit fait autorité. Logo « Y+ » (`docs/brand/logo`), icônes d'app (`docs/brand/icons`), planche (`docs/brand/source`).
+Signature : « Y a plus ? On le note. »
 
-| Jeton | Clair | Rôle |
-| --- | --- | --- |
-| paper | `#FBFCFE` | fond |
-| ink | `#1B2A4A` | texte (encre bleu-noir) |
-| bic | `#2347C5` | actions principales |
-| margin | `#D7263D` | « y'a plus » : produits à racheter, et rien d'autre |
-| rule | `#DCE4F2` | lignes et bordures |
-| bought | `#1F8A5B` | acheté |
+| Jeton | Clair | Sombre | Rôle |
+| --- | --- | --- | --- |
+| brand | `#0B7BE0` | `#3D9BF0` | logo, anneau de focus, surfaces non textuelles |
+| primary | `#0A6CC8` | `#3D9BF0` | boutons et liens (bleu de marque assombri : 5,26:1 au lieu de 4,27:1) |
+| foreground | `#2A2A2A` | `#F1EFEA` | texte (anthracite du kit) |
+| background | `#F8F7F4` | `#1E1E1E` | fond ; cartes en blanc / `#262626` |
+| secondary | `#F1EFEA` | `#303030` | surfaces secondaires (blanc chaud du kit) |
+| flag | `#D7263D` | `#FF5C70` | état « y'a plus » uniquement, jamais décoratif |
+| success | `#1F8A5B` | `#3DBE84` | acheté |
 
-- Typo : **Atkinson Hyperlegible Next** (une seule famille), choisie pour la lisibilité sur petits écrans.
-- L'élément mémorable : la **marge rouge** des listes de produits, où le signalement s'inscrit.
-  Tout le reste reste calme.
+- Typo : **Outfit** (celle du logotype), une seule famille.
+- Le rouge n'est pas une couleur de marque : c'est l'état « à racheter », dans la **marge** des listes
+  (filet vertical de 1px) et sur les produits signalés. Tout le reste reste calme.
+- Vérifier le contraste (≥ 4,5:1) de toute nouvelle paire de couleurs, en clair et en sombre.
 - Composants : shadcn/ui (`src/components/ui`), icônes Lucide, animations Motion (`motion/react`).
 
 ## Interdits (tics de design généré)

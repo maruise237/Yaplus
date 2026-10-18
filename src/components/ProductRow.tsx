@@ -31,7 +31,7 @@ export function StatusMark({ status }: { status: Product["status"] }) {
         "relative grid size-6 shrink-0 place-items-center rounded-full border transition-colors duration-150",
         status === "to_buy" && "border-flag bg-flag text-flag-foreground",
         status === "bought" && "border-success bg-success text-white",
-        status === "in_stock" && "border-input bg-background",
+        status === "in_stock" && "border-input bg-card",
       )}
       aria-hidden
     >
