@@ -28,6 +28,16 @@ create table if not exists auth_failures (
 );
 create index if not exists auth_failures_phone_at on auth_failures (phone, at);
 
+-- Journal du panneau d'administration : qui s'est connecté, quel mot de passe a été remplacé.
+create table if not exists admin_events (
+  id bigint generated always as identity primary key,
+  at timestamptz not null default now(),
+  admin_id uuid not null references users (id),
+  action text not null,
+  target text,
+  ip text
+);
+
 -- ---------------------------------------------------------------------------
 -- Cahier
 -- ---------------------------------------------------------------------------

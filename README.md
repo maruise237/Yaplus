@@ -40,19 +40,31 @@ pose un cookie de session httpOnly valable un an, et freine les essais en rafale
 API (`src/app/api`) : `auth/signup`, `auth/signin`, `auth/signout`, `sync/push`, `sync/pull`, `invites`, `invites/accept`.
 La base n'est jamais exposée aux téléphones ; les droits par boutique sont vérifiés dans `src/server/rules.ts`.
 
+## Panneau d'administration (caché)
+
+- Servi seulement sous une adresse secrète : `/<ADMIN_PATH>`. Le chemin interne `/admin` répond 404, comme toute
+  adresse inconnue (`src/proxy.ts`). Aucun lien n'y mène, les pages sont `noindex` et jamais gardées en cache.
+- Accès : un numéro listé dans `ADMIN_PHONES`, le mot de passe de ce compte Yaplus et le code à 6 chiffres
+  d'une appli d'authentification (`ADMIN_TOTP_SECRET`). 5 échecs ferment le panneau 15 minutes.
+- Session à part : cookie de 8 heures, envoyé seulement à l'adresse secrète, signé avec une clé distincte de celle du cahier.
+- Contenu : vue d'ensemble (métriques v1 du PRD), boutiques, comptes avec remplacement du mot de passe oublié,
+  journal des actions admin (`admin_events`).
+- Mise en place : `node scripts/admin-setup.mjs 2376XXXXXXXX`, copier les trois variables dans Vercel, puis `npm run db:migrate`.
+  Sans ces variables, le panneau n'existe pas.
+
 ## Ce qui est en place (v1)
 
 | PRD | Où |
 | --- | --- |
-| Découverte (3 écrans avant le compte : démo jouable, objectif, avant / après) | `src/app/decouvrir`, `src/components/onboarding` |
-| Grille des catégories à l'ouverture, recherche globale | `src/app/page.tsx` |
+| Découverte (3 écrans avant le compte : démo jouable, objectif, avant / après) | `src/app/(app)/decouvrir`, `src/components/onboarding` |
+| Grille des catégories à l'ouverture, recherche globale | `src/app/(app)/page.tsx` |
 | Signalement en un tap, note / « x3 » facultatifs | `src/components/ProductRow.tsx`, `ProductSheet.tsx` |
 | Création sur place + suggestion anti-doublon (sans fusion auto) | `src/components/ProductSearch.tsx`, `src/lib/text.ts` |
-| Vue « À racheter » par catégorie, avec l'auteur, oubliés en haut | `src/app/a-racheter/page.tsx` |
+| Vue « À racheter » par catégorie, avec l'auteur, oubliés en haut | `src/app/(app)/a-racheter/page.tsx` |
 | Partage WhatsApp (`wa.me`, +237 par défaut) | `src/lib/whatsapp.ts` |
-| Clôture (patron) + historique figé | `src/lib/actions.ts` → `closeList`, `src/app/historique` |
+| Clôture (patron) + historique figé | `src/lib/actions.ts` → `closeList`, `src/app/(app)/historique` |
 | Hors-ligne : IndexedDB + outbox + synchro par événement | `src/lib/db.ts`, `src/lib/sync.ts`, `public/sw.js` |
-| Quasi temps réel (relève toutes les 15 s quand l'app est à l'écran), vue multi-boutiques | `src/lib/sync.ts`, `src/app/boutique` |
+| Quasi temps réel (relève toutes les 15 s quand l'app est à l'écran), vue multi-boutiques | `src/lib/sync.ts`, `src/app/(app)/boutique` |
 | Connexion par numéro + mot de passe (sans code, sans fournisseur), invitations par lien | `src/lib/auth.ts`, `src/components/SignInForm.tsx`, `src/lib/invites.ts` |
 | Droits par boutique, seul le patron invite / retire / clôture | `src/server/rules.ts`, `db/schema.sql` |
 

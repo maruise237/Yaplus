@@ -42,7 +42,8 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(request)
       .then((res) => {
-        if (res.ok) {
+        // Les réponses marquées no-store (panneau admin) ne restent jamais sur l'appareil.
+        if (res.ok && !res.headers.get("cache-control")?.includes("no-store")) {
           const copy = res.clone();
           caches.open(VERSION).then((cache) => cache.put(request, copy));
         }

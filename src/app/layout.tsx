@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
-import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
 // Outfit : la police du logotype (kit de marque v1).
@@ -27,9 +26,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr" className={font.variable}>
-      <body>
-        <AppShell>{children}</AppShell>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
