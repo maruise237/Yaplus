@@ -9,6 +9,8 @@ Utilisateurs : employés de boutique, parfois peu à l'aise à l'écrit, une mai
    - `.claude/skills/impeccable` (pbakaus/impeccable) : lancer `scripts/impeccable context`, lire
      `reference/craft-floor.md` avant toute modification, puis la référence de la commande (polish, critique…).
    - `.claude/skills/frontend-design` (anthropics/skills) : direction visuelle.
+   - Premier usage / accueil : `reference/onboard.md` d'impeccable. Principe : valeur d'abord
+     (montrer le geste avant de demander un compte), tout est passable, rien de bloquant reportable.
 2. Rechercher sur le web chaque besoin non trivial ; si une compétence manque, chercher le meilleur dépôt
    (skill, lib, guide) et l'installer dans `.claude/skills/` ou en dépendance.
 3. Construire, puis **capturer l'écran** (Playwright, mobile 390px + desktop 1280px, clair + sombre),
@@ -41,13 +43,15 @@ Signature : « Y a plus ? On le note. »
   (filet vertical de 1px) et sur les produits signalés. Tout le reste reste calme.
 - Vérifier le contraste (≥ 4,5:1) de toute nouvelle paire de couleurs, en clair et en sombre.
 - Composants : shadcn/ui (`src/components/ui`), icônes Lucide, animations Motion (`motion/react`).
+- Fond de marque (écrans de découverte) : le « Y+ » en très pâle (`BrandBackdrop`), jamais sur les écrans de travail.
+- Tester aussi en 360×640 : l'action principale doit rester visible sans défiler.
 
 ## Interdits (tics de design généré)
 
 - Emojis comme icônes ; `prompt()`, `confirm()`, `alert()` natifs.
 - Libellés en MAJUSCULES, sur-titres au-dessus des titres, infos jointes par « · ».
 - Cartes arrondies identiques partout, ombres grises génériques, dégradés décoratifs.
-- Bordure latérale colorée de plus de 1px sur une carte, une ligne ou une alerte.
+- Bordure latérale colorée de plus de 1px sur une carte, une ligne ou une alerte. Cartes imbriquées.
 - Fenêtre modale par réflexe : préférer l'édition sur place quand rien ne doit être protégé.
 - Surfaces navigateur laissées par défaut (sélection, curseur de saisie, focus).
 - Animations d'entrée en cascade au chargement. Le mouvement répond seulement à une action

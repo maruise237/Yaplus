@@ -35,6 +35,7 @@ tout reste dans le téléphone. Idéal pour montrer le geste en boutique.
 
 | PRD | Où |
 | --- | --- |
+| Découverte (3 écrans avant le compte : démo jouable, objectif, avant / après) | `src/app/decouvrir`, `src/components/onboarding` |
 | Grille des catégories à l'ouverture, recherche globale | `src/app/page.tsx` |
 | Signalement en un tap, note / « x3 » facultatifs | `src/components/ProductRow.tsx`, `ProductSheet.tsx` |
 | Création sur place + suggestion anti-doublon (sans fusion auto) | `src/components/ProductSearch.tsx`, `src/lib/text.ts` |
