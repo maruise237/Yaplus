@@ -4,10 +4,12 @@ import { History, LayoutGrid, ShoppingCart, Store, type LucideIcon } from "lucid
 import { MotionConfig } from "motion/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { useCurrentShop, useProducts, useSession } from "@/lib/hooks";
 import { quick } from "@/lib/motion";
+import { seedDemo } from "@/lib/demo";
+import { isCloudConfigured } from "@/lib/supabase";
 import { startSync } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 import { SyncStatus } from "./SyncStatus";
@@ -51,15 +53,23 @@ function Shell({ children }: { children: React.ReactNode }) {
     if (session?.mode === "cloud") return startSync();
   }, [session?.mode]);
 
+  // Lien de démo (?demo=1) : remplit une boutique d'exemple, sur cet appareil uniquement,
+  // puis reste sur la page demandée.
+  const [demo] = useState(() => typeof window !== "undefined" && !isCloudConfigured && new URLSearchParams(window.location.search).has("demo"));
+  useEffect(() => {
+    if (demo && session === null) void seedDemo();
+  }, [demo, session]);
+
   const isPublic = PUBLIC_ROUTES.includes(pathname);
   const allowsNoShop = NO_SHOP_ROUTES.includes(pathname);
 
   useEffect(() => {
     if (session === undefined || current === undefined) return;
+    if (demo && !current) return;
     if (session === null && !isPublic) router.replace("/connexion");
     else if (session && current === null && !allowsNoShop) router.replace("/bienvenue");
     else if (session && current && (pathname === "/connexion" || pathname === "/bienvenue")) router.replace("/");
-  }, [session, current, isPublic, allowsNoShop, pathname, router]);
+  }, [session, current, isPublic, allowsNoShop, pathname, router, demo]);
 
   const ready = isPublic || (session && (current || allowsNoShop));
   if (!ready) return <div className="min-h-dvh" aria-busy="true" />;

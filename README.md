@@ -11,7 +11,8 @@ PWA hors-ligne d'abord (Next.js + IndexedDB/Dexie), synchronisée avec Supabase.
 - Direction « le cahier » : papier, encre bleue, marge rouge pour les produits à racheter. Police **Lexend**, conçue pour faciliter la lecture.
 - Responsive : onglets en bas et feuilles du bas sur téléphone ; barre latérale et fenêtres centrées dès 768 px.
 - Mouvement uniquement en réponse à une action (tap, ouverture, confirmation), `prefers-reduced-motion` respecté.
-- Règles de design et méthode de travail : [`CLAUDE.md`](CLAUDE.md). Skill installé : `.claude/skills/frontend-design` (anthropics/skills).
+- Règles de design et méthode de travail : [`CLAUDE.md`](CLAUDE.md). Skills installés : `.claude/skills/impeccable` (pbakaus/impeccable, détecteur de tics IA) et `.claude/skills/frontend-design` (anthropics/skills).
+- **Démo** : ouvrir `/?demo=1` (sans Supabase configuré) remplit une boutique d'exemple sur l'appareil, pratique pour montrer l'app.
 
 ## Démarrer
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, MoreHorizontal, RotateCcw, ShoppingCart } from "lucide-react";
+import { Check, MoreVertical, RotateCcw, ShoppingCart } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -73,13 +73,13 @@ export function ProductRow({
 
   return (
     <motion.li {...listItem} className="overflow-hidden">
-      <div className={cn("flex items-center transition-colors duration-150", toBuy && "bg-flag-subtle")}>
+      <div className={cn("flex items-center transition-colors duration-150", toBuy ? "bg-flag-subtle" : "hover:bg-accent/50")}>
         <motion.button
           type="button"
           whileTap={{ scale: 0.985 }}
           onClick={() => void toggleWithUndo(product)}
           aria-pressed={toBuy}
-          className="flex min-h-16 min-w-0 flex-1 items-center py-2.5 pr-2 text-left outline-none focus-visible:bg-accent"
+          className="flex min-h-16 min-w-0 flex-1 items-center py-2.5 pr-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
         >
           {/* La marge du cahier : le signalement s'y inscrit */}
           <span className="grid w-12 shrink-0 place-items-center">
@@ -101,7 +101,7 @@ export function ProductRow({
         </motion.button>
         {onMore && (
           <Button variant="ghost" size="icon-touch" className="mr-1.5 text-muted-foreground" onClick={() => onMore(product)} aria-label={`Options pour ${product.name}`}>
-            <MoreHorizontal />
+            <MoreVertical />
           </Button>
         )}
       </div>

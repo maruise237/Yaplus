@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, MoreHorizontal, RotateCcw } from "lucide-react";
+import { MessageCircle, MoreVertical, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -187,7 +187,7 @@ function BuyRow({ product, members, onMore }: { product: Product; members?: Map<
 
   return (
     <motion.li {...listItem} className="overflow-hidden">
-      <div className={cn("flex items-center transition-colors duration-150", isBought && "bg-success-subtle")}>
+      <div className={cn("flex items-center transition-colors duration-150", isBought ? "bg-success-subtle" : "hover:bg-accent/50")}>
         <label htmlFor={id} className="flex min-h-16 min-w-0 flex-1 cursor-pointer items-center py-2.5 pr-2">
           <span className="grid w-12 shrink-0 place-items-center">
             <Checkbox
@@ -214,7 +214,7 @@ function BuyRow({ product, members, onMore }: { product: Product; members?: Map<
           </span>
         </label>
         <Button variant="ghost" size="icon-touch" className="mr-1.5 text-muted-foreground" onClick={onMore} aria-label={`Options pour ${product.name}`}>
-          <MoreHorizontal />
+          <MoreVertical />
         </Button>
       </div>
     </motion.li>
