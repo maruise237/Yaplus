@@ -5,6 +5,14 @@
 Cahier de réapprovisionnement partagé pour boutiques : remplace le cahier papier et le groupe WhatsApp.
 PWA hors-ligne d'abord (Next.js + IndexedDB/Dexie), synchronisée avec Supabase. Spécification complète : [`docs/PRD.md`](docs/PRD.md).
 
+## Interface
+
+- Composants **shadcn/ui** (Radix) dans `src/components/ui`, icônes **Lucide**, animations **Motion** (`motion/react`), notifications **Sonner**.
+- Direction « le cahier » : papier, encre bleue, marge rouge pour les produits à racheter. Police **Lexend**, conçue pour faciliter la lecture.
+- Responsive : onglets en bas et feuilles du bas sur téléphone ; barre latérale et fenêtres centrées dès 768 px.
+- Mouvement uniquement en réponse à une action (tap, ouverture, confirmation), `prefers-reduced-motion` respecté.
+- Règles de design et méthode de travail : [`CLAUDE.md`](CLAUDE.md). Skill installé : `.claude/skills/frontend-design` (anthropics/skills).
+
 ## Démarrer
 
 ```bash

@@ -1,14 +1,43 @@
 "use client";
 
+import { Archive, Merge } from "lucide-react";
 import { useState } from "react";
-import { archiveProduct, mergeProducts, setNote, updateProduct } from "@/lib/actions";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { archiveProduct, mergeProducts, setNote, toggleProduct, updateProduct } from "@/lib/actions";
 import type { Category, Product } from "@/lib/db";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { ResponsiveSheet } from "./ResponsiveSheet";
 
 const QUICK_NOTES = ["x2", "x3", "x5", "x10", "urgent"];
 
-// Options d'un produit : quantité / note (jamais obligatoires), renommer, déplacer,
-// et pour le patron : fusionner un doublon ou archiver.
+// Options d'un produit : quantité ou note (jamais obligatoires), nom, catégorie.
+// Patron : fusionner un doublon ou retirer du cahier.
 export function ProductSheet({
+  product,
+  categories,
+  products,
+  isOwner,
+  onClose,
+}: {
+  product: Product | null;
+  categories: Category[];
+  products: Product[];
+  isOwner: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <ResponsiveSheet open={Boolean(product)} onOpenChange={(open) => !open && onClose()} title={product?.name ?? ""}>
+      {product && <SheetBody key={product.id} product={product} categories={categories} products={products} isOwner={isOwner} onClose={onClose} />}
+    </ResponsiveSheet>
+  );
+}
+
+function SheetBody({
   product,
   categories,
   products,
@@ -25,93 +54,133 @@ export function ProductSheet({
   const [name, setName] = useState(product.name);
   const [categoryId, setCategoryId] = useState(product.category_id);
   const [mergeInto, setMergeInto] = useState("");
+  const [confirmArchive, setConfirmArchive] = useState(false);
 
   const save = async () => {
-    if (name.trim() && (name.trim() !== product.name || categoryId !== product.category_id)) {
-      await updateProduct(product.id, { name, category_id: categoryId });
+    const nextName = name.trim() || product.name;
+    if (nextName !== product.name || categoryId !== product.category_id) {
+      await updateProduct(product.id, { name: nextName, category_id: categoryId });
     }
     if ((note.trim() || null) !== product.note) await setNote(product.id, note);
     onClose();
   };
 
-  const field = "w-full rounded-xl border border-line bg-bg px-3 py-3 outline-none focus:border-brand";
+  const merge = async () => {
+    const target = products.find((p) => p.id === mergeInto);
+    await mergeProducts(product.id, mergeInto);
+    toast(`Fusionné dans ${target?.name}`);
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end bg-black/40" onClick={onClose}>
-      <div
-        className="mx-auto max-h-[90dvh] w-full max-w-xl space-y-4 overflow-y-auto rounded-t-3xl bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">{product.name}</h2>
-          <button onClick={onClose} className="px-2 text-2xl text-muted" aria-label="Fermer">
-            ×
-          </button>
+    <form
+      className="grid gap-6 pb-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
+    >
+      {product.status === "to_buy" && (
+        <div className="flex items-center gap-3 rounded-lg bg-flag-subtle py-2 pr-2 pl-3.5">
+          <p className="min-w-0 flex-1 text-[15px] font-medium text-flag-text">Sur la liste à racheter</p>
+          <Button type="button" variant="outline" size="touch" className="bg-card" onClick={() => void toggleProduct(product.id).then(onClose)}>
+            Remettre en stock
+          </Button>
         </div>
+      )}
 
-        <div>
-          <p className="mb-2 text-sm font-medium text-muted">Quantité ou note (facultatif)</p>
-          <div className="mb-2 flex flex-wrap gap-2">
-            {QUICK_NOTES.map((n) => (
-              <button
-                key={n}
-                onClick={() => setNoteValue(note === n ? "" : n)}
-                className={`rounded-full border px-4 py-2 font-medium ${note === n ? "border-brand bg-brand-soft text-brand" : "border-line"}`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-          <input className={field} value={note} onChange={(e) => setNoteValue(e.target.value)} placeholder="Ex. couleur noire" />
-        </div>
-
-        <div className="grid gap-2">
-          <p className="text-sm font-medium text-muted">Nom et page</p>
-          <input className={field} value={name} onChange={(e) => setName(e.target.value)} />
-          <select className={field} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button onClick={() => void save()} className="w-full rounded-2xl bg-brand px-4 py-4 font-semibold text-brand-ink">
-          Enregistrer
-        </button>
-
-        {isOwner && (
-          <div className="space-y-2 border-t border-line pt-4">
-            <p className="text-sm font-medium text-muted">Patron</p>
-            <div className="flex gap-2">
-              <select className={field} value={mergeInto} onChange={(e) => setMergeInto(e.target.value)}>
-                <option value="">Fusionner ce doublon dans…</option>
-                {products
-                  .filter((p) => p.id !== product.id)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-              </select>
-              <button
-                disabled={!mergeInto}
-                onClick={() => void mergeProducts(product.id, mergeInto).then(onClose)}
-                className="rounded-xl border border-line px-4 font-medium disabled:opacity-40"
-              >
-                OK
-              </button>
-            </div>
-            <button
-              onClick={() => confirm(`Retirer « ${product.name} » du cahier ?`) && void archiveProduct(product.id).then(onClose)}
-              className="w-full rounded-xl px-4 py-3 text-brand"
+      <div className="grid gap-2.5">
+        <Label htmlFor="note">
+          Quantité ou note <span className="font-normal text-muted-foreground">(facultatif)</span>
+        </Label>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Raccourcis">
+          {QUICK_NOTES.map((n) => (
+            <Button
+              key={n}
+              type="button"
+              variant="outline"
+              size="touch"
+              aria-pressed={note === n}
+              onClick={() => setNoteValue(note === n ? "" : n)}
+              className="min-w-14 aria-pressed:border-foreground aria-pressed:bg-secondary"
             >
-              Retirer du cahier
-            </button>
-          </div>
-        )}
+              {n}
+            </Button>
+          ))}
+        </div>
+        <Input id="note" value={note} onChange={(e) => setNoteValue(e.target.value)} placeholder="Ex. couleur noire…" autoComplete="off" />
       </div>
-    </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2.5">
+          <Label htmlFor="product-name">Nom</Label>
+          <Input id="product-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />
+        </div>
+        <div className="grid gap-2.5">
+          <Label htmlFor="product-page">Catégorie</Label>
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger id="product-page" className="h-11! w-full text-base">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id} className="h-10 text-base">
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <Button type="submit" size="touch-lg">
+        Enregistrer
+      </Button>
+
+      {isOwner && (
+        <>
+          <Separator />
+          <div className="grid gap-2.5">
+            <Label htmlFor="merge">Doublon ?</Label>
+            <div className="flex gap-2">
+              <Select value={mergeInto} onValueChange={setMergeInto}>
+                <SelectTrigger id="merge" className="h-11! min-w-0 flex-1 text-base">
+                  <SelectValue placeholder="Fusionner dans…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products
+                    .filter((p) => p.id !== product.id)
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id} className="h-10 text-base">
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="outline" size="touch" disabled={!mergeInto} onClick={() => void merge()}>
+                <Merge aria-hidden />
+                Fusionner
+              </Button>
+            </div>
+          </div>
+          <Button type="button" variant="ghost" size="touch" className="justify-start text-destructive hover:text-destructive" onClick={() => setConfirmArchive(true)}>
+            <Archive aria-hidden />
+            Retirer du cahier
+          </Button>
+          <ConfirmDialog
+            open={confirmArchive}
+            onOpenChange={setConfirmArchive}
+            title={`Retirer « ${product.name} » ?`}
+            description="Il disparaît du cahier mais reste visible dans l’historique."
+            confirmLabel="Retirer"
+            destructive
+            onConfirm={async () => {
+              await archiveProduct(product.id);
+              onClose();
+            }}
+          />
+        </>
+      )}
+    </form>
   );
 }

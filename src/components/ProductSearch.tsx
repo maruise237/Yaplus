@@ -1,12 +1,17 @@
 "use client";
 
+import { Plus, Search, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { createProduct, toggleProduct } from "@/lib/actions";
 import type { Category, Product } from "@/lib/db";
 import { findSimilar, normalizeName } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
-// Champ unique pour retrouver un produit ou le créer sur place.
-// Avant toute création, l'app propose les produits proches : l'utilisateur décide, jamais de fusion auto.
+// Un seul champ pour retrouver un produit ou le créer sur place.
+// S'il existe déjà quelque chose de proche, on le propose d'abord : la création passe au second plan.
 export function ProductSearch({
   shopId,
   products,
@@ -21,86 +26,136 @@ export function ProductSearch({
   placeholder?: string;
 }) {
   const [query, setQuery] = useState("");
-  const [pickCategory, setPickCategory] = useState(false);
   const categoryNames = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
 
-  const matches = useMemo(() => (query.trim() ? findSimilar(query, products, 6) : []), [query, products]);
-  const exact = matches.find((p) => p.name_normalized === normalizeName(query));
+  const trimmed = query.trim();
+  const matches = useMemo(() => (trimmed ? findSimilar(trimmed, products, 5) : []), [trimmed, products]);
+  const exact = matches.some((p) => p.name_normalized === normalizeName(trimmed));
+  const needsPage = !categoryId;
+
+  const reset = () => {
+    setQuery("");
+  };
 
   // On vide le champ tout de suite : l'employé peut enchaîner sans attendre l'écriture.
   const flag = async (product: Product) => {
-    setQuery("");
-    if (product.status !== "to_buy") await toggleProduct(product.id);
+    reset();
+    if (product.status === "to_buy") return;
+    await toggleProduct(product.id);
+    toast(`${product.name} ajouté à la liste`, { id: "toggle", action: { label: "Annuler", onClick: () => void toggleProduct(product.id) } });
   };
 
   const create = async (targetCategory: string) => {
-    const name = query;
-    setQuery("");
-    setPickCategory(false);
+    const name = trimmed;
+    reset();
     await createProduct(shopId, targetCategory, name);
+    toast(`${name} créé et ajouté à la liste`, { id: "toggle" });
   };
 
   return (
-    <div className="space-y-2">
-      <input
-        className="w-full rounded-2xl border border-line bg-surface px-4 py-3.5 text-base outline-none focus:border-brand"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setPickCategory(false);
-        }}
-        placeholder={placeholder}
-        enterKeyHint="done"
-      />
+    <div className="relative">
+      <div className="relative">
+        <Search className="pointer-events-none absolute top-1/2 left-3.5 size-[18px] -translate-y-1/2 text-muted-foreground" aria-hidden />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+                  }}
+          onKeyDown={(e) => e.key === "Escape" && reset()}
+          placeholder={placeholder}
+          enterKeyHint="search"
+          autoComplete="off"
+          spellCheck={false}
+          aria-label="Chercher ou ajouter un produit"
+          className="h-12 w-full rounded-xl border border-input bg-card pr-11 pl-11 text-base shadow-xs outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25 [&::-webkit-search-cancel-button]:hidden"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={reset}
+            className="absolute top-1/2 right-1 grid size-10 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground"
+            aria-label="Effacer"
+          >
+            <X className="size-[18px]" />
+          </button>
+        )}
+      </div>
 
-      {query.trim() && (
-        <div className="space-y-2 rounded-2xl border border-line bg-surface p-2">
-          {matches.length > 0 && !exact && (
-            <p className="px-2 pt-1 text-sm text-muted">
-              <strong className="text-ink">{matches[0].name}</strong> existe déjà, c&apos;est lui ?
-            </p>
-          )}
-          {matches.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => void flag(p)}
-              className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left hover:bg-bg"
-            >
-              <span className="min-w-0">
-                <span className="block truncate font-semibold">{p.name}</span>
-                <span className="block truncate text-xs text-muted">{categoryNames.get(p.category_id)}</span>
-              </span>
-              <span className={`shrink-0 text-sm font-medium ${p.status === "to_buy" ? "text-muted" : "text-brand"}`}>
-                {p.status === "to_buy" ? "déjà signalé" : "Y'a plus"}
-              </span>
-            </button>
-          ))}
-
-          {!exact &&
-            (pickCategory || !categoryId ? (
-              <div className="space-y-1 px-1 pb-1">
-                <p className="px-2 pt-1 text-sm text-muted">Ranger « {query.trim()} » dans :</p>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((c) => (
-                    <button key={c.id} onClick={() => void create(c.id)} className="rounded-full border border-line px-3 py-2 text-sm">
-                      {c.name}
-                    </button>
+      <AnimatePresence>
+        {trimmed && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4, transition: { duration: 0.1 } }}
+            className="mt-2 overflow-hidden rounded-xl border bg-popover shadow-sm"
+          >
+            {matches.length > 0 && (
+              <div className="py-1.5">
+                <p className="px-4 pt-1.5 pb-1 text-xs font-medium text-muted-foreground">
+                  {exact ? "Dans le cahier" : "Déjà dans le cahier. C’est l’un d’eux ?"}
+                </p>
+                <ul>
+                  {matches.map((p) => (
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        onClick={() => void flag(p)}
+                        className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium">{p.name}</span>
+                          <span className="block truncate text-[13px] text-muted-foreground">{categoryNames.get(p.category_id) ?? "Sans catégorie"}</span>
+                        </span>
+                        {p.status === "to_buy" ? (
+                          <span className="shrink-0 text-[13px] text-muted-foreground">Déjà sur la liste</span>
+                        ) : (
+                          <span className="shrink-0 text-[13px] font-medium text-flag-text">Ajouter à la liste</span>
+                        )}
+                      </button>
+                    </li>
                   ))}
-                  {!categories.length && <p className="px-2 text-sm text-muted">Crée d&apos;abord une catégorie.</p>}
-                </div>
+                </ul>
               </div>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => void create(categoryId)} className="flex-1 rounded-xl bg-brand px-3 py-3 font-semibold text-brand-ink">
-                  + Créer « {query.trim()} »
-                </button>
-                <button onClick={() => setPickCategory(true)} className="rounded-xl border border-line px-3 text-sm text-muted">
-                  Autre page
-                </button>
+            )}
+
+            {!exact && (
+              <div className={cn("p-3", matches.length > 0 && "border-t")}>
+                {needsPage ? (
+                  <div>
+                    <p className="mb-2 px-1 text-[13px] text-muted-foreground">
+                      Créer <span className="font-medium text-foreground">« {trimmed} »</span> dans quelle catégorie ?
+                    </p>
+                    {categories.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {categories.map((c) => (
+                          <Button key={c.id} variant="outline" size="touch" onClick={() => void create(c.id)}>
+                            {c.name}
+                          </Button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="px-1 text-[13px] text-muted-foreground">Crée d’abord une catégorie.</p>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    variant={matches.length ? "outline" : "default"}
+                    size="touch"
+                    className="w-full min-w-0 justify-start"
+                    onClick={() => void create(categoryId!)}
+                  >
+                    <Plus aria-hidden />
+                    <span className="truncate">
+                      {matches.length ? "Non, créer" : "Créer"} « {trimmed} »
+                    </span>
+                  </Button>
+                )}
               </div>
-            ))}
-        </div>
-      )}
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

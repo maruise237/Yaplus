@@ -1,71 +1,111 @@
 "use client";
 
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Wordmark } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { createShop, SHOP_TEMPLATES } from "@/lib/actions";
 import { useSession } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
 
-const TEMPLATE_LABELS: Record<keyof typeof SHOP_TEMPLATES, string> = {
+type Template = keyof typeof SHOP_TEMPLATES;
+
+const TEMPLATE_LABELS: Record<Template, string> = {
   telephonie: "Téléphonie",
   alimentation: "Alimentation",
   quincaillerie: "Quincaillerie",
-  vide: "Cahier vide",
+  vide: "Je crée mes catégories",
 };
 
 export default function BienvenuePage() {
   const router = useRouter();
   const session = useSession();
   const [name, setName] = useState("");
-  const [template, setTemplate] = useState<keyof typeof SHOP_TEMPLATES>("telephonie");
+  const [template, setTemplate] = useState<Template>("telephonie");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
 
   const submit = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) return setError(true);
     setBusy(true);
     await createShop(name, template);
     router.replace("/");
   };
 
   return (
-    <div className="space-y-8">
+    <div className="grid gap-8">
+      <Wordmark />
       <div>
-        <h1 className="text-3xl font-black">Bienvenue{session ? `, ${session.displayName}` : ""}</h1>
-        <p className="mt-2 text-muted">Crée le cahier de ta boutique. Tu pourras inviter tes employés ensuite.</p>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Bienvenue{session ? `, ${session.displayName}` : ""}</h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">Crée le cahier de ta boutique. Tu inviteras tes employés ensuite.</p>
       </div>
 
-      <form className="space-y-4" onSubmit={(e) => (e.preventDefault(), submit())}>
-        <input
-          className="w-full rounded-2xl border border-line bg-surface px-4 py-4 text-lg outline-none focus:border-brand"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Nom de la boutique"
-          autoFocus
-        />
-        <div>
-          <p className="mb-2 text-sm font-medium text-muted">Catégories de départ</p>
-          <div className="grid grid-cols-2 gap-2">
-            {(Object.keys(SHOP_TEMPLATES) as (keyof typeof SHOP_TEMPLATES)[]).map((t) => (
-              <button
-                type="button"
-                key={t}
-                onClick={() => setTemplate(t)}
-                className={`rounded-2xl border px-3 py-3 text-left ${template === t ? "border-brand bg-brand-soft" : "border-line bg-surface"}`}
-              >
-                <div className="font-semibold">{TEMPLATE_LABELS[t]}</div>
-                <div className="truncate text-xs text-muted">{SHOP_TEMPLATES[t].join(", ") || "Tu crées tes pages"}</div>
-              </button>
-            ))}
-          </div>
+      <form className="grid gap-6" onSubmit={(e) => (e.preventDefault(), submit())}>
+        <div className="grid gap-2.5">
+          <Label htmlFor="shop-name">Nom de la boutique</Label>
+          <Input
+            id="shop-name"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setError(false);
+            }}
+            placeholder="Ex. Boutique Akwa…"
+            autoComplete="organization"
+            aria-invalid={error}
+          />
+          {error && <p className="text-sm text-destructive">Donne un nom à la boutique.</p>}
         </div>
-        <button className="w-full rounded-2xl bg-brand px-4 py-4 text-lg font-semibold text-brand-ink disabled:opacity-50" disabled={busy || !name.trim()}>
-          Créer la boutique
-        </button>
+
+        <fieldset>
+          <legend className="mb-1 text-sm font-medium">Catégories de départ</legend>
+          <p className="mb-3 text-sm text-muted-foreground">Tu pourras les renommer ou en ajouter.</p>
+          <div className="divide-y overflow-hidden rounded-xl border bg-card" role="radiogroup">
+            {(Object.keys(SHOP_TEMPLATES) as Template[]).map((t) => {
+              const selected = template === t;
+              return (
+                <button
+                  type="button"
+                  key={t}
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setTemplate(t)}
+                  className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-accent/60"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium">{TEMPLATE_LABELS[t]}</span>
+                    {SHOP_TEMPLATES[t].length > 0 && <span className="block truncate text-sm text-muted-foreground">{SHOP_TEMPLATES[t].join(", ")}</span>}
+                  </span>
+                  <span
+                    className={cn(
+                      "grid size-6 shrink-0 place-items-center rounded-full border transition-colors duration-150",
+                      selected ? "border-primary bg-primary text-primary-foreground" : "border-input",
+                    )}
+                    aria-hidden
+                  >
+                    {selected && <Check className="size-3.5" strokeWidth={3} />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <Button type="submit" size="touch-lg" disabled={busy}>
+          {busy ? "Création…" : "Créer la boutique"}
+        </Button>
       </form>
 
-      <Link href="/rejoindre" className="block rounded-2xl border border-line bg-surface px-4 py-4 text-center font-medium">
-        J&apos;ai un code d&apos;invitation
-      </Link>
+      <p className="text-center text-[15px] text-muted-foreground">
+        Ton patron t’a invité ?{" "}
+        <Link href="/rejoindre" className="font-medium text-primary underline-offset-4 hover:underline">
+          Entrer un code
+        </Link>
+      </p>
     </div>
   );
 }

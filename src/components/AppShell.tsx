@@ -1,27 +1,45 @@
 "use client";
 
+import { History, LayoutGrid, ShoppingCart, Store, type LucideIcon } from "lucide-react";
+import { MotionConfig } from "motion/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useCurrentShop, useSession } from "@/lib/hooks";
+import { Toaster } from "@/components/ui/sonner";
+import { useCurrentShop, useProducts, useSession } from "@/lib/hooks";
+import { quick } from "@/lib/motion";
 import { startSync } from "@/lib/sync";
-import { SyncBadge } from "./SyncBadge";
+import { cn } from "@/lib/utils";
+import { SyncStatus } from "./SyncStatus";
 
 const PUBLIC_ROUTES = ["/connexion", "/rejoindre"];
 const NO_SHOP_ROUTES = ["/bienvenue", "/rejoindre"];
 
-const NAV = [
-  { href: "/", label: "Cahier", icon: "▦" },
-  { href: "/a-racheter", label: "À racheter", icon: "🛒" },
-  { href: "/historique", label: "Historique", icon: "🕘" },
-  { href: "/boutique", label: "Boutique", icon: "⚙" },
+type NavItem = { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean };
+
+const NAV: NavItem[] = [
+  { href: "/", label: "Cahier", icon: LayoutGrid, match: (p) => p === "/" || p === "/categorie" },
+  { href: "/a-racheter", label: "À racheter", icon: ShoppingCart, match: (p) => p === "/a-racheter" },
+  { href: "/historique", label: "Historique", icon: History, match: (p) => p === "/historique" },
+  { href: "/boutique", label: "Boutique", icon: Store, match: (p) => p === "/boutique" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <MotionConfig reducedMotion="user" transition={quick}>
+      <Shell>{children}</Shell>
+      <Toaster position="bottom-center" offset={{ bottom: 24 }} mobileOffset={{ bottom: "var(--toast-bottom, calc(5rem + env(safe-area-inset-bottom)))" }} />
+    </MotionConfig>
+  );
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const session = useSession();
   const current = useCurrentShop();
+  const products = useProducts(current?.shop.id);
+  const toBuyCount = products.filter((p) => p.status === "to_buy").length;
 
   useEffect(() => {
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
@@ -44,45 +62,119 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [session, current, isPublic, allowsNoShop, pathname, router]);
 
   const ready = isPublic || (session && (current || allowsNoShop));
-  if (!ready) {
-    return <div className="grid min-h-dvh place-items-center text-2xl font-black text-brand">Yaplus</div>;
+  if (!ready) return <div className="min-h-dvh" aria-busy="true" />;
+
+  // Écrans d'accueil (connexion, création de boutique) : une colonne centrée, sans navigation.
+  if (!current || isPublic || allowsNoShop) {
+    return (
+      <main className="mx-auto w-full max-w-sm px-5 pt-[max(3rem,env(safe-area-inset-top))] pb-12 sm:max-w-md md:pt-[12vh]">{children}</main>
+    );
   }
 
-  const showChrome = Boolean(current) && !isPublic && !allowsNoShop;
-
   return (
-    <div className="mx-auto flex min-h-dvh max-w-xl flex-col">
-      {showChrome && (
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-line bg-bg/95 px-4 py-3 backdrop-blur">
-          <Link href="/" className="min-w-0">
-            <div className="text-xs font-black tracking-wide text-brand">YAPLUS</div>
-            <div className="truncate text-base font-semibold">{current!.shop.name}</div>
-          </Link>
-          <SyncBadge />
-        </header>
-      )}
-      <main className={`flex-1 px-4 ${showChrome ? "pb-28 pt-4" : "py-8"}`}>{children}</main>
-      {showChrome && (
-        <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]">
-          <div className="mx-auto grid max-w-xl grid-cols-4">
-            {NAV.map((item) => {
-              const active = item.href === "/" ? pathname === "/" || pathname === "/categorie" : pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium ${active ? "text-brand" : "text-muted"}`}
-                >
-                  <span className="text-xl leading-none" aria-hidden>
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
+    <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
+      {/* Grand écran : barre latérale */}
+      <aside className="sticky top-0 hidden h-dvh flex-col border-r bg-card/50 md:flex">
+        <div className="px-5 pt-6 pb-5">
+          <Wordmark />
+          <p className="mt-3 truncate text-sm font-medium">{current.shop.name}</p>
+        </div>
+        <nav className="grid gap-0.5 px-3">
+          {NAV.map((item) => (
+            <SideLink key={item.href} item={item} active={item.match(pathname)} count={item.href === "/a-racheter" ? toBuyCount : 0} />
+          ))}
         </nav>
-      )}
+        <div className="mt-auto p-4">
+          <SyncStatus />
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-col">
+        {/* Téléphone : en-tête compact */}
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b bg-background/90 px-4 backdrop-blur-md md:hidden">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <LogoMark />
+            <span className="truncate font-semibold">{current.shop.name}</span>
+          </div>
+          <SyncStatus compact />
+        </header>
+
+        <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 md:px-10 md:pt-10 md:pb-16">
+          {children}
+        </main>
+      </div>
+
+      {/* Téléphone : barre d'onglets */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-4">
+          {NAV.map((item) => (
+            <TabLink key={item.href} item={item} active={item.match(pathname)} count={item.href === "/a-racheter" ? toBuyCount : 0} />
+          ))}
+        </div>
+      </nav>
     </div>
+  );
+}
+
+function TabLink({ item, active, count }: { item: NavItem; active: boolean; count: number }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
+        active ? "text-foreground" : "text-muted-foreground",
+      )}
+    >
+      <span className="relative">
+        <Icon className="size-[22px]" strokeWidth={active ? 2.25 : 1.75} aria-hidden />
+        {count > 0 && (
+          <span className="absolute -top-1.5 left-3.5 min-w-[18px] rounded-full bg-flag px-1 text-center text-[10px] leading-[18px] font-semibold text-flag-foreground tabular-nums">
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
+      </span>
+      {item.label}
+    </Link>
+  );
+}
+
+function SideLink({ item, active, count }: { item: NavItem; active: boolean; count: number }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+        active ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+      )}
+    >
+      <Icon className="size-[18px]" strokeWidth={active ? 2.25 : 1.75} aria-hidden />
+      <span className="flex-1">{item.label}</span>
+      {count > 0 && <span className="text-xs font-semibold text-flag-text tabular-nums">{count}</span>}
+    </Link>
+  );
+}
+
+export function LogoMark({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn("grid size-7 shrink-0 place-items-center rounded-[7px] bg-primary text-[13px] font-bold text-primary-foreground", className)}
+      aria-hidden
+      translate="no"
+    >
+      Y
+    </span>
+  );
+}
+
+export function Wordmark() {
+  return (
+    <span className="flex items-center gap-2.5" translate="no">
+      <LogoMark />
+      <span className="text-[17px] font-semibold tracking-tight">Yaplus</span>
+    </span>
   );
 }

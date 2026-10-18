@@ -1,61 +1,122 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+/* Thème système : l'app suit le réglage clair/sombre du téléphone. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+/*
+ * Direction « le cahier » (voir CLAUDE.md) :
+ * papier, encre bleu-noir, stylo bleu pour les actions, marge rouge pour "y'a plus".
+ */
 :root {
-  --bg: #faf8f5;
-  --surface: #ffffff;
-  --ink: #1c1917;
-  --muted: #78716c;
-  --line: #e7e5e4;
-  --brand: #ea580c; /* "y'a plus" : orange rupture */
-  --brand-ink: #ffffff;
-  --brand-soft: #ffedd5;
-  --ok: #16a34a;
-  --ok-soft: #dcfce7;
-  --warn: #b45309;
-  --warn-soft: #fef3c7;
+  --background: #fbfcfe;
+  --foreground: #1b2a4a;
+  --card: #ffffff;
+  --card-foreground: var(--foreground);
+  --popover: #ffffff;
+  --popover-foreground: var(--foreground);
+  --primary: #2347c5;
+  --primary-foreground: #ffffff;
+  --secondary: #eef2fa;
+  --secondary-foreground: var(--foreground);
+  --muted: #eef2fa;
+  --muted-foreground: #5b6785;
+  --accent: #eef2fa;
+  --accent-foreground: var(--foreground);
+  --destructive: #c4243a;
+  --border: #dce4f2;
+  --input: #c9d4ea;
+  --ring: #2347c5;
+  --flag: #d7263d;
+  --flag-foreground: #ffffff;
+  --flag-subtle: #fdf2f4;
+  --flag-text: #b51d33;
+  --success: #1f8a5b;
+  --success-subtle: #eef8f3;
+  --success-text: #176b46;
+  --radius: 0.75rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0c0a09;
-    --surface: #1c1917;
-    --ink: #f5f5f4;
-    --muted: #a8a29e;
-    --line: #292524;
-    --brand: #fb923c;
-    --brand-ink: #1c1917;
-    --brand-soft: #431407;
-    --ok: #4ade80;
-    --ok-soft: #052e16;
-    --warn: #fbbf24;
-    --warn-soft: #422006;
+    --background: #0e1424;
+    --foreground: #e7ecf7;
+    --card: #141c30;
+    --popover: #18213a;
+    --primary: #8ea6ff;
+    --primary-foreground: #0e1424;
+    --secondary: #1e2842;
+    --muted: #1e2842;
+    --muted-foreground: #98a3bf;
+    --accent: #1e2842;
+    --destructive: #ff6b7d;
+    --border: rgb(220 228 242 / 0.1);
+    --input: rgb(220 228 242 / 0.17);
+    --ring: #8ea6ff;
+    --flag: #ff5c70;
+    --flag-foreground: #1a0a0d;
+    --flag-subtle: #2a1522;
+    --flag-text: #ff8a99;
+    --success: #3dbe84;
+    --success-subtle: #10261e;
+    --success-text: #6fd8a6;
   }
 }
 
 @theme inline {
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-ink: var(--ink);
+  --font-sans: var(--font-app), system-ui, sans-serif;
+  --font-heading: var(--font-app), system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
-  --color-line: var(--line);
-  --color-brand: var(--brand);
-  --color-brand-ink: var(--brand-ink);
-  --color-brand-soft: var(--brand-soft);
-  --color-ok: var(--ok);
-  --color-ok-soft: var(--ok-soft);
-  --color-warn: var(--warn);
-  --color-warn-soft: var(--warn-soft);
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-flag: var(--flag);
+  --color-flag-foreground: var(--flag-foreground);
+  --color-flag-subtle: var(--flag-subtle);
+  --color-flag-text: var(--flag-text);
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-text: var(--success-text);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.33);
+  --radius-2xl: calc(var(--radius) * 1.66);
 }
 
-html,
-body {
-  background: var(--bg);
-  color: var(--ink);
-  -webkit-tap-highlight-color: transparent;
-}
-
-button {
-  cursor: pointer;
-  touch-action: manipulation;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }

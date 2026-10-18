@@ -2,7 +2,11 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { Wordmark } from "@/components/AppShell";
 import { SignInForm } from "@/components/SignInForm";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useSession } from "@/lib/hooks";
 import { acceptInvite } from "@/lib/invites";
 import { isCloudConfigured } from "@/lib/supabase";
@@ -15,20 +19,6 @@ function Join() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isCloudConfigured) {
-    return <p className="text-muted">Les invitations seront disponibles une fois le serveur Supabase branché.</p>;
-  }
-  if (session === undefined) return null;
-  if (session === null) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-black">Rejoindre la boutique</h1>
-        <p className="text-muted">Connecte-toi avec ton numéro, puis tu arrives directement dans le cahier.</p>
-        <SignInForm />
-      </div>
-    );
-  }
-
   const submit = async () => {
     setBusy(true);
     setError(null);
@@ -36,26 +26,58 @@ function Join() {
       await acceptInvite(code);
       router.replace("/");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
+      setError(e instanceof Error ? e.message : "Impossible de rejoindre la boutique.");
       setBusy(false);
     }
   };
 
+  let body: React.ReactNode;
+  if (!isCloudConfigured) {
+    body = <p className="text-[15px] text-muted-foreground">Les invitations fonctionnent une fois le serveur branché.</p>;
+  } else if (session === undefined) {
+    body = null;
+  } else if (session === null) {
+    body = <SignInForm />;
+  } else {
+    body = (
+      <form className="grid gap-4" onSubmit={(e) => (e.preventDefault(), submit())}>
+        <div className="grid gap-2.5">
+          <Label htmlFor="invite-code">Code d’invitation</Label>
+          <Input
+            id="invite-code"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+            placeholder="Ex. K7P2QX"
+            maxLength={6}
+            autoComplete="off"
+            spellCheck={false}
+            className="h-14 text-center text-2xl font-semibold tracking-[0.3em] uppercase"
+            aria-invalid={Boolean(error)}
+          />
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+        <Button type="submit" size="touch-lg" disabled={busy}>
+          {busy ? "Connexion à la boutique…" : "Rejoindre"}
+        </Button>
+      </form>
+    );
+  }
+
   return (
-    <form className="space-y-4" onSubmit={(e) => (e.preventDefault(), submit())}>
-      <h1 className="text-3xl font-black">Rejoindre la boutique</h1>
-      <input
-        className="w-full rounded-2xl border border-line bg-surface px-4 py-4 text-center text-2xl font-bold uppercase tracking-[0.3em] outline-none focus:border-brand"
-        value={code}
-        onChange={(e) => setCode(e.target.value.toUpperCase())}
-        placeholder="CODE"
-        maxLength={6}
-      />
-      {error && <p className="text-sm text-brand">{error}</p>}
-      <button className="w-full rounded-2xl bg-brand px-4 py-4 text-lg font-semibold text-brand-ink disabled:opacity-50" disabled={busy || code.length < 6}>
-        Rejoindre
-      </button>
-    </form>
+    <div className="grid gap-8">
+      <Wordmark />
+      <div>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Rejoindre une boutique</h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+          {session ? "Entre le code envoyé par ton patron." : "Connecte-toi avec ton numéro, puis entre le code reçu."}
+        </p>
+      </div>
+      {body}
+    </div>
   );
 }
 
