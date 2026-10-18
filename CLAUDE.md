@@ -23,6 +23,22 @@ Utilisateurs : employés de boutique, parfois peu à l'aise à l'écrit, une mai
 5. Référence : Vercel Web Interface Guidelines (cibles ≥ 44px, inputs ≥ 16px, pas d'autofocus mobile,
    `prefers-reduced-motion`, jamais `transition: all`, états vides / erreur / chargement conçus).
 
+## Façon de coder (d'après multica-ai/andrej-karpathy-skills)
+
+Prudence avant vitesse ; pour une tâche triviale, juger soi-même.
+
+1. **Réfléchir avant de coder.** Dire ses hypothèses. Si la demande a plusieurs lectures, les présenter
+   au lieu d'en choisir une en silence. Si une voie plus simple existe, le dire. Si c'est flou, s'arrêter et demander.
+2. **Le plus simple d'abord.** Le minimum de code qui règle le problème : pas de fonction non demandée,
+   pas d'abstraction pour un seul usage, pas de réglage « au cas où », pas de gestion d'erreurs impossibles.
+   200 lignes qui pourraient en faire 50 : réécrire.
+3. **Changements chirurgicaux.** Ne toucher que ce qui est nécessaire, garder le style existant,
+   ne pas « améliorer » le code voisin. Supprimer ce que *son propre* changement rend inutile ; signaler
+   le reste sans le supprimer. Chaque ligne modifiée doit se rattacher à la demande.
+4. **Viser un résultat vérifiable.** Transformer la tâche en critère testable (« corriger le bug » →
+   un test qui le reproduit, puis qui passe). Pour plusieurs étapes, annoncer un plan court
+   `étape → vérification`, et boucler jusqu'à ce que chaque vérification passe.
+
 ## Identité : kit de marque Yaplus v1 (`docs/brand`)
 
 Le kit fait autorité. Logo « Y+ » (`docs/brand/logo`), icônes d'app (`docs/brand/icons`), planche (`docs/brand/source`).
