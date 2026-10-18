@@ -59,7 +59,7 @@ create table if not exists invites (
   shop_id uuid not null references shops (id),
   code text not null unique,
   created_by uuid not null references users (id),
-  expires_at timestamptz not null default now() + interval '7 days',
+  expires_at timestamptz not null default now() + interval '24 hours',
   used_at timestamptz,
   used_by uuid references users (id),
   updated_at timestamptz not null default now(),

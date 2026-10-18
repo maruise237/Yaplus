@@ -275,7 +275,7 @@ function InviteSheet({ open, onOpenChange, shopId, shopName }: { open: boolean; 
           <p className="text-3xl font-bold tracking-[0.25em] tabular-nums" translate="no">
             {code}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">Valable 7 jours, pour une personne.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Valable 24 heures, pour une personne.</p>
         </div>
       ) : (
         <p className={cn("text-sm", error ? "text-destructive" : "text-muted-foreground")}>

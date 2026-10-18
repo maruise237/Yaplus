@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fail, readJson, withUser } from "@/server/api";
+import { fail, loadRoles, readJson, withUser } from "@/server/api";
 import { query } from "@/server/db";
 
 // Une seule requête : le code est consommé et l'employé ajouté ensemble, ou rien du tout.
@@ -8,6 +8,16 @@ export async function POST(req: Request) {
     const body = await readJson(req);
     const code = typeof body?.code === "string" ? body.code.trim().toUpperCase() : "";
     if (!code) return fail(400, "invalid_invite");
+
+    const [invite] = await query<{ shop_id: string; used: boolean; expired: boolean }>(
+      "select shop_id, used_at is not null as used, expires_at <= now() as expired from invites where code = $1",
+      [code],
+    );
+    if (!invite) return fail(404, "invalid_invite");
+    // Déjà dans la boutique (lien rouvert, réponse perdue, patron qui teste) : on ne brûle pas le code.
+    if ((await loadRoles(userId)).has(invite.shop_id)) return NextResponse.json({ shopId: invite.shop_id });
+    if (invite.used) return fail(410, "invite_used");
+    if (invite.expired) return fail(410, "invite_expired");
 
     const [row] = await query<{ shop_id: string }>(
       `with invite as (
@@ -24,7 +34,7 @@ export async function POST(req: Request) {
        select shop_id from member`,
       [code, userId],
     );
-    if (!row) return fail(404, "invalid_invite");
+    if (!row) return fail(410, "invite_used");
     return NextResponse.json({ shopId: row.shop_id });
   });
 }

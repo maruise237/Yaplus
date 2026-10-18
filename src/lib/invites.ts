@@ -26,7 +26,10 @@ export async function acceptInvite(code: string): Promise<string> {
     shopId = (await api<{ shopId: string }>("/api/invites/accept", { code })).shopId;
   } catch (e) {
     if (e instanceof ApiError && e.offline) throw new Error("Pas de réseau. Réessaie quand tu es connecté.");
-    throw new Error(e instanceof ApiError && e.code === "invalid_invite" ? "Code invalide ou expiré." : "Impossible de rejoindre la boutique.");
+    const reason = e instanceof ApiError ? e.code : null;
+    if (reason === "invite_used") throw new Error("Ce code a déjà servi. Demande un nouveau code à ton patron.");
+    if (reason === "invite_expired") throw new Error("Ce code a expiré. Demande un nouveau code à ton patron.");
+    throw new Error(reason === "invalid_invite" ? "Ce code n’existe pas. Vérifie les lettres." : "Impossible de rejoindre la boutique.");
   }
   await resetCursors();
   await syncNow();
