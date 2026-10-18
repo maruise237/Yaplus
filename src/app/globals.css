@@ -131,3 +131,25 @@
     cursor: pointer;
   }
 }
+
+/* Questions de l'accueil : la réponse s'ouvre en douceur là où le navigateur sait le faire. */
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+  details::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 220ms cubic-bezier(0.2, 0, 0, 1),
+      content-visibility 220ms allow-discrete;
+  }
+  details[open]::details-content {
+    block-size: auto;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    details::details-content {
+      transition: none;
+    }
+  }
+}

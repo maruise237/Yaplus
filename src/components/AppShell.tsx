@@ -14,7 +14,7 @@ import { startSync } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 import { SyncStatus } from "./SyncStatus";
 
-const PUBLIC_ROUTES = ["/decouvrir", "/connexion", "/rejoindre"];
+const PUBLIC_ROUTES = ["/accueil", "/decouvrir", "/connexion", "/rejoindre"];
 const NO_SHOP_ROUTES = ["/bienvenue", "/rejoindre"];
 
 type NavItem = { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean };
@@ -66,17 +66,17 @@ function Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (session === undefined || current === undefined) return;
     if (demo && !current) return;
-    if (session === null && !isPublic) router.replace("/decouvrir");
+    if (session === null && !isPublic) router.replace("/accueil");
     else if (session && current === null && !allowsNoShop) router.replace("/bienvenue");
-    else if (session && current && (pathname === "/decouvrir" || pathname === "/connexion" || pathname === "/bienvenue")) router.replace("/");
-    else if (session && current === null && pathname === "/decouvrir") router.replace("/bienvenue");
+    else if (session && current && (pathname === "/accueil" || pathname === "/decouvrir" || pathname === "/connexion" || pathname === "/bienvenue")) router.replace("/");
+    else if (session && current === null && (pathname === "/accueil" || pathname === "/decouvrir")) router.replace("/bienvenue");
   }, [session, current, isPublic, allowsNoShop, pathname, router, demo]);
 
   const ready = isPublic || (session && (current || allowsNoShop));
   if (!ready) return <div className="min-h-dvh" aria-busy="true" />;
 
-  // Découverte : plein écran, avec son propre fond de marque.
-  if (pathname === "/decouvrir") return <>{children}</>;
+  // Accueil et découverte : plein écran, avec leur propre fond.
+  if (pathname === "/accueil" || pathname === "/decouvrir") return <>{children}</>;
 
   // Écrans d'accueil (connexion, création de boutique) : une colonne centrée, sans navigation.
   if (!current || isPublic || allowsNoShop) {
