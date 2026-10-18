@@ -1,165 +1,164 @@
 "use client";
 
-import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { saveSession } from "@/lib/session";
-import { getSupabase, isCloudConfigured } from "@/lib/supabase";
-import { syncNow } from "@/lib/sync";
-import { cn } from "@/lib/utils";
-import { normalizePhone } from "@/lib/whatsapp";
+import { AuthError, type AuthField, MIN_PASSWORD_LENGTH, signIn, signUp } from "@/lib/auth";
+import { isCloudConfigured } from "@/lib/supabase";
 
-// Connexion par numéro + code (SMS ou WhatsApp), sans mot de passe.
-// Sans serveur configuré : mode « sur cet appareil », on demande juste un prénom.
-export function SignInForm({ onDone }: { onDone?: () => void }) {
-  const [step, setStep] = useState<"phone" | "code" | "name">("phone");
-  const [phone, setPhone] = useState("");
-  const [channel, setChannel] = useState<"whatsapp" | "sms">("whatsapp");
-  const [code, setCode] = useState("");
+export type AuthMode = "inscription" | "connexion";
+
+function FieldError({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <p id={id} className="text-sm text-destructive" role="alert">
+      {children}
+    </p>
+  );
+}
+
+// Numéro + mot de passe, sans code à attendre : rien n'est envoyé par SMS ou WhatsApp.
+export function SignInForm({
+  mode,
+  onModeChange,
+  onDone,
+}: {
+  mode: AuthMode;
+  onModeChange: (mode: AuthMode) => void;
+  onDone?: () => void;
+}) {
   const [name, setName] = useState("");
-  const [userId, setUserId] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; field: AuthField | null } | null>(null);
+  const refs = { name: useRef<HTMLInputElement>(null), phone: useRef<HTMLInputElement>(null), password: useRef<HTMLInputElement>(null) };
+  const signingUp = mode === "inscription";
 
-  const run = async (fn: () => Promise<void>) => {
+  const submit = async () => {
     setBusy(true);
     setError(null);
     try {
-      await fn();
+      if (signingUp) await signUp({ name, phone, password });
+      else await signIn({ phone, password });
+      onDone?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Une erreur est survenue. Réessaie.");
-    } finally {
+      const err = e instanceof AuthError ? e : new AuthError("Une erreur est survenue. Réessaie.");
+      setError({ message: err.message, field: err.field });
+      if (err.field) refs[err.field].current?.focus();
       setBusy(false);
     }
   };
 
-  const finish = async (id: string, displayName: string) => {
-    if (isCloudConfigured) await getSupabase()!.auth.updateUser({ data: { display_name: displayName } });
-    await saveSession({
-      userId: id,
-      displayName,
-      phone: isCloudConfigured ? `+${normalizePhone(phone)}` : null,
-      mode: isCloudConfigured ? "cloud" : "local",
-    });
-    if (isCloudConfigured) await syncNow();
-    onDone?.();
+  // L'erreur disparaît dès qu'on corrige le champ concerné.
+  const edit = (field: AuthField, set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    set(e.target.value);
+    if (error && (error.field === field || error.field === null)) setError(null);
   };
 
-  const sendCode = () =>
-    run(async () => {
-      const normalized = normalizePhone(phone);
-      if (!normalized) throw new Error("Ce numéro ne semble pas valide. Exemple : 6 99 00 11 22");
-      const { error } = await getSupabase()!.auth.signInWithOtp({ phone: `+${normalized}`, options: { channel } });
-      if (error) throw new Error("Le code n’a pas pu être envoyé. Vérifie le numéro et réessaie.");
-      setStep("code");
-    });
-
-  const verifyCode = () =>
-    run(async () => {
-      const { data, error } = await getSupabase()!.auth.verifyOtp({ phone: `+${normalizePhone(phone)}`, token: code.trim(), type: "sms" });
-      if (error || !data.user) throw new Error("Code incorrect ou expiré.");
-      setUserId(data.user.id);
-      const savedName = data.user.user_metadata?.display_name as string | undefined;
-      if (savedName) await finish(data.user.id, savedName);
-      else setStep("name");
-    });
-
-  const saveName = () =>
-    run(async () => {
-      if (!name.trim()) throw new Error("Écris ton prénom : l’équipe verra qui a signalé quoi.");
-      await finish(userId ?? crypto.randomUUID(), name.trim());
-    });
-
-  const errorText = error && (
-    <p className="text-sm text-destructive" role="alert">
-      {error}
-    </p>
-  );
-
-  if (!isCloudConfigured || step === "name") {
-    return (
-      <form className="grid gap-4" onSubmit={(e) => (e.preventDefault(), saveName())}>
-        <div className="grid gap-2.5">
-          <Label htmlFor="name">Ton prénom</Label>
-          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex. Paul" autoComplete="given-name" aria-invalid={Boolean(error)} />
-          {errorText}
-        </div>
-        <Button type="submit" size="touch-lg" disabled={busy}>
-          Continuer
-        </Button>
-        {!isCloudConfigured && (
-          <p className="text-sm text-muted-foreground">Mode démo : le cahier reste sur ce téléphone, rien n’est envoyé.</p>
-        )}
-      </form>
-    );
-  }
-
-  if (step === "code") {
-    return (
-      <form className="grid gap-4" onSubmit={(e) => (e.preventDefault(), verifyCode())}>
-        <div className="grid gap-2.5">
-          <Label htmlFor="otp">Code reçu par {channel === "sms" ? "SMS" : "WhatsApp"}</Label>
-          <Input
-            id="otp"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            className="h-14 text-center text-2xl tracking-[0.4em] tabular-nums"
-            aria-invalid={Boolean(error)}
-          />
-          {errorText}
-        </div>
-        <Button type="submit" size="touch-lg" disabled={busy}>
-          {busy ? "Vérification…" : "Valider"}
-        </Button>
-        <Button type="button" variant="ghost" size="touch" className="text-muted-foreground" onClick={() => setStep("phone")}>
-          Changer de numéro
-        </Button>
-      </form>
-    );
-  }
+  const errorFor = (field: AuthField) => (error?.field === field ? error.message : null);
+  const describedBy = (field: AuthField, hint?: string) => [errorFor(field) ? `${field}-error` : null, hint].filter(Boolean).join(" ") || undefined;
 
   return (
-    <form className="grid gap-4" onSubmit={(e) => (e.preventDefault(), sendCode())}>
+    <form className="grid gap-5" onSubmit={(e) => (e.preventDefault(), void submit())} noValidate>
+      {signingUp && (
+        <div className="grid gap-2.5">
+          <Label htmlFor="name">Ton prénom</Label>
+          <Input
+            ref={refs.name}
+            id="name"
+            name="given-name"
+            value={name}
+            onChange={edit("name", setName)}
+            placeholder="Ex. Paul"
+            autoComplete="given-name"
+            aria-invalid={Boolean(errorFor("name"))}
+            aria-describedby={describedBy("name")}
+          />
+          {errorFor("name") && <FieldError id="name-error">{errorFor("name")}</FieldError>}
+        </div>
+      )}
+
       <div className="grid gap-2.5">
         <Label htmlFor="phone">Ton numéro de téléphone</Label>
         <Input
+          ref={refs.phone}
           id="phone"
+          name="tel"
           type="tel"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={edit("phone", setPhone)}
           placeholder="6 99 00 11 22"
           inputMode="tel"
           autoComplete="tel"
-          aria-invalid={Boolean(error)}
+          aria-invalid={Boolean(errorFor("phone"))}
+          aria-describedby={describedBy("phone")}
         />
-        {errorText}
+        {errorFor("phone") && <FieldError id="phone-error">{errorFor("phone")}</FieldError>}
       </div>
-      <fieldset className="grid gap-2.5">
-        <legend className="mb-2.5 text-sm font-medium">Recevoir le code par</legend>
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1">
-          {(["whatsapp", "sms"] as const).map((c) => (
-            <button
-              type="button"
-              key={c}
-              onClick={() => setChannel(c)}
-              aria-pressed={channel === c}
-              className={cn(
-                "h-10 rounded-md text-[15px] font-medium transition-[background-color,color,box-shadow] duration-150",
-                channel === c ? "bg-card text-foreground shadow-xs" : "text-muted-foreground",
-              )}
-            >
-              {c === "sms" ? "SMS" : "WhatsApp"}
-            </button>
-          ))}
+
+      <div className="grid gap-2.5">
+        <Label htmlFor="password">Mot de passe</Label>
+        <div className="relative">
+          <Input
+            ref={refs.password}
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={edit("password", setPassword)}
+            autoComplete={signingUp ? "new-password" : "current-password"}
+            spellCheck={false}
+            className="pr-12"
+            aria-invalid={Boolean(errorFor("password"))}
+            aria-describedby={describedBy("password", signingUp ? "password-hint" : undefined)}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute top-0 right-0 grid size-11 place-items-center rounded-lg text-muted-foreground"
+            aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
+            aria-pressed={showPassword}
+          >
+            {showPassword ? <EyeOff className="size-5" aria-hidden /> : <Eye className="size-5" aria-hidden />}
+          </button>
         </div>
-      </fieldset>
+        {errorFor("password") ? (
+          <FieldError id="password-error">{errorFor("password")}</FieldError>
+        ) : (
+          signingUp && (
+            <p id="password-hint" className="text-sm text-muted-foreground">
+              {MIN_PASSWORD_LENGTH} caractères minimum. Des chiffres suffisent, garde-le pour toi.
+            </p>
+          )
+        )}
+      </div>
+
+      {error && !error.field && <FieldError id="form-error">{error.message}</FieldError>}
+
       <Button type="submit" size="touch-lg" disabled={busy}>
-        {busy ? "Envoi…" : "Recevoir le code"}
+        {busy ? (signingUp ? "Création du compte…" : "Connexion…") : signingUp ? "Créer mon compte" : "Se connecter"}
       </Button>
+
+      <p className="text-center text-[15px] text-muted-foreground">
+        {signingUp ? "Déjà un compte ?" : "Pas encore de compte ?"}{" "}
+        <button
+          type="button"
+          onClick={() => {
+            onModeChange(signingUp ? "connexion" : "inscription");
+            setError(null);
+          }}
+          className="inline-flex h-11 items-center font-medium text-primary underline-offset-4 hover:underline"
+        >
+          {signingUp ? "Se connecter" : "Créer un compte"}
+        </button>
+      </p>
+
+      {!isCloudConfigured && (
+        <p className="text-sm text-muted-foreground">Mode démo : le compte et le cahier restent sur ce téléphone, rien n’est envoyé.</p>
+      )}
     </form>
   );
 }

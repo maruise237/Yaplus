@@ -143,13 +143,13 @@ function Discover() {
           })}
         </ul>
         <p className="mt-6 text-[15px] leading-relaxed text-muted-foreground">
-          Pour commencer : ton prénom, puis le nom de ta boutique. Moins d’une minute.
+          Pour commencer : ton prénom, ton numéro et un mot de passe, puis le nom de ta boutique. Moins d’une minute.
         </p>
       </>
     );
     footer = (
       <>
-        <Button size="touch-lg" className="w-full" onClick={() => router.push("/connexion")}>
+        <Button size="touch-lg" className="w-full" onClick={() => router.push("/connexion?mode=inscription")}>
           Créer ma boutique
         </Button>
         <Button variant="ghost" size="touch" className="w-full text-muted-foreground" asChild>

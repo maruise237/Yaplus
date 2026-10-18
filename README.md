@@ -27,8 +27,9 @@ tout reste dans le téléphone. Idéal pour montrer le geste en boutique.
 ## Brancher Supabase (mode équipe)
 
 1. Créer un projet Supabase, puis exécuter `supabase/migrations/0001_init.sql` (SQL Editor ou `supabase db push`).
-2. Auth → Providers → **Phone** : activer, choisir un fournisseur SMS (Twilio, MessageBird, Vonage…).
-   Le code par WhatsApp passe par Twilio (canal `whatsapp`).
+2. Auth → Providers → **Email** : laisser activé et **désactiver « Confirm email »**.
+   Aucun fournisseur SMS ou WhatsApp n'est nécessaire : la connexion se fait par numéro + mot de passe.
+   Le numéro est converti en identifiant interne `<numéro>@tel.yaplus.app` (jamais affiché, aucun mail envoyé).
 3. Copier `.env.example` en `.env.local` et remplir `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 ## Ce qui est en place (v1)
@@ -44,7 +45,7 @@ tout reste dans le téléphone. Idéal pour montrer le geste en boutique.
 | Clôture (patron) + historique figé | `src/lib/actions.ts` → `closeList`, `src/app/historique` |
 | Hors-ligne : IndexedDB + outbox + synchro par événement | `src/lib/db.ts`, `src/lib/sync.ts`, `public/sw.js` |
 | Temps réel, vue multi-boutiques | `src/lib/sync.ts` (Realtime), `src/app/boutique` |
-| Connexion par numéro + code SMS/WhatsApp, invitations par lien | `src/components/SignInForm.tsx`, `src/lib/invites.ts` |
+| Connexion par numéro + mot de passe (sans code, sans fournisseur), invitations par lien | `src/lib/auth.ts`, `src/components/SignInForm.tsx`, `src/lib/invites.ts` |
 | RLS par boutique, seul le patron invite / retire / clôture | `supabase/migrations/0001_init.sql` |
 
 ### Synchronisation
@@ -65,6 +66,7 @@ npm run build
 
 ## Reste à faire (plan de build)
 
-- Tester la migration SQL sur un vrai projet Supabase et la connexion par SMS au Cameroun (coût, fiabilité).
+- Tester la migration SQL et l'inscription numéro + mot de passe sur un vrai projet Supabase.
+- Mot de passe oublié : réinitialisation par le patron (fonction serveur avec la clé service), à construire.
 - Test terrain réseau coupé sur un vrai Android, empaquetage Play Store (Trusted Web Activity).
 - Notifications push web (rappels) — la v1 s'appuie sur le marqueur « oublié la dernière fois ».

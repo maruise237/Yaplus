@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Wordmark } from "@/components/AppShell";
-import { SignInForm } from "@/components/SignInForm";
+import { type AuthMode, SignInForm } from "@/components/SignInForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ function Join() {
   const [code, setCode] = useState(params.get("code") ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authMode, setAuthMode] = useState<AuthMode>("inscription");
 
   const submit = async () => {
     setBusy(true);
@@ -37,7 +38,7 @@ function Join() {
   } else if (session === undefined) {
     body = null;
   } else if (session === null) {
-    body = <SignInForm />;
+    body = <SignInForm mode={authMode} onModeChange={setAuthMode} />;
   } else {
     body = (
       <form className="grid gap-4" onSubmit={(e) => (e.preventDefault(), submit())}>
@@ -73,7 +74,7 @@ function Join() {
       <div>
         <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Rejoindre une boutique</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
-          {session ? "Entre le code envoyé par ton patron." : "Connecte-toi avec ton numéro, puis entre le code reçu."}
+          {session ? "Entre le code envoyé par ton patron." : "Crée ton compte avec ton numéro et un mot de passe, puis entre le code reçu."}
         </p>
       </div>
       {body}

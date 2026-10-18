@@ -30,7 +30,11 @@ export async function setCurrentShopId(shopId: string): Promise<void> {
   await setMeta("currentShopId", shopId);
 }
 
+// Efface le cahier de l'appareil. En mode démo, les comptes locaux (numéro + mot de passe)
+// sont gardés pour pouvoir se reconnecter.
 export async function signOutLocal(): Promise<void> {
+  const accounts = await getMeta("localAccounts");
   await db.delete();
   await db.open();
+  if (accounts) await setMeta("localAccounts", accounts);
 }

@@ -130,7 +130,7 @@ PWA offline-first sur Next.js et Supabase, qui reste dans ta stack actuelle. And
 | File d'attente | Une "outbox" locale des actions non envoyées | Chaque action part dès que le réseau revient, dans l'ordre |
 | Backend | Supabase (Postgres, Auth, Realtime) | Auth, base, temps réel et règles de sécurité dans un seul outil |
 | Temps réel | Supabase Realtime sur la boutique | Le patron voit les signalements arriver sans recharger |
-| Connexion | Numéro de téléphone avec code par SMS ou WhatsApp, sans mot de passe | Un employé peu à l'aise avec l'écrit ne retient pas de mot de passe |
+| Connexion | Numéro de téléphone + mot de passe, sans code SMS ni WhatsApp | Aucun fournisseur d'envoi à payer ; le numéro sert d'identifiant |
 | Partage | Lien `wa.me` avec message encodé | Aucune API payante, fonctionne sur tout téléphone avec WhatsApp |
 | Rappels | Notifications push web sur Android | iOS reste limité, le marqueur dans l'app fait office de rappel |
 | Android | PWA puis Trusted Web Activity pour le Play Store | Réutilise le compte développeur existant |
@@ -145,7 +145,7 @@ PWA offline-first sur Next.js et Supabase, qui reste dans ta stack actuelle. And
 
 Cinq semaines pour une v1 utilisable en vraie boutique, en solo. Chaque étape finit par quelque chose que tu peux montrer à ton cousin.
 
-1. **Semaine 1, socle.** Projet Next.js et Supabase, connexion par numéro, boutiques, membres, règles de sécurité. Tu peux créer une boutique et inviter quelqu'un.
+1. **Semaine 1, socle.** Projet Next.js et Supabase, connexion par numéro et mot de passe, boutiques, membres, règles de sécurité. Tu peux créer une boutique et inviter quelqu'un.
 2. **Semaine 2, le cahier.** Catégories, produits, signalement en un tap, vue "À racheter", suggestion anti-doublon. Utilisable en ligne, avec le design final de la grille.
 3. **Semaine 3, hors-ligne.** IndexedDB, outbox, synchro par événement, indicateur "en attente", installation PWA. Test avec le réseau coupé sur un vrai téléphone Android.
 4. **Semaine 4, partage et clôture.** Message WhatsApp par catégorie, clôture, historique, marqueur "oublié", vue patron multi-boutiques en temps réel.
@@ -181,10 +181,10 @@ Si un employé retourne au papier après une semaine, on cherche pourquoi avant 
 | --- | --- | --- |
 | Nom du produit | Tranché : **Yaplus** (« y'a plus »), court et facile à dire à l'oral | Identité visuelle à finaliser |
 | Prix | Combien le patron paie, et par boutique ou par compte | À tester en boutique, hypothèse de départ : abonnement mensuel par boutique, employés illimités |
-| Connexion par numéro | Coût et fiabilité des codes par SMS au Cameroun | Comparer SMS et code par WhatsApp avant de figer |
+| Connexion par numéro | Tranché : numéro + mot de passe, pas de code envoyé | Prévoir la réinitialisation du mot de passe par le patron |
 | Rappels sur iOS | Les notifications push web y sont limitées | Le marqueur dans l'app et le lien WhatsApp comblent le manque en v1 |
 | Vocabulaire | Les produits s'écrivent de 10 façons différentes | Suggestion anti-doublon et modèles de cahier par type de commerce |
-| Adoption des employés | Un employé peut préférer le papier par habitude | Zéro mot de passe, grille de catégories dès l'ouverture, aucune saisie obligatoire |
+| Adoption des employés | Un employé peut préférer le papier par habitude | Mot de passe court accepté (chiffres), grille de catégories dès l'ouverture, aucune saisie obligatoire |
 | Concurrence indirecte | EasyStor et les autres outils de stock sont plus lourds | Rester sur le geste "c'est fini", sans inventaire ni caisse |
 
 **Questions à trancher ensuite.** L'identité visuelle, le tarif, et le premier type de commerce à cibler pour les modèles de cahier prérempli.
