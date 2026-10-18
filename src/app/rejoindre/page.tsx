@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Wordmark } from "@/components/AppShell";
 import { type AuthMode, SignInForm } from "@/components/SignInForm";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,16 @@ function Join() {
       setBusy(false);
     }
   };
+
+  // Arrivé par le lien et connecté : on rejoint sans redemander le code. Déjà membre, le serveur
+  // renvoie simplement la boutique ; c'est ce qui ramène l'employé qui rouvre le lien.
+  const linkCode = params.get("code");
+  const tried = useRef(false);
+  useEffect(() => {
+    if (!session || !linkCode || tried.current) return;
+    tried.current = true;
+    void submit();
+  });
 
   let body: React.ReactNode;
   if (!isCloudConfigured) {
