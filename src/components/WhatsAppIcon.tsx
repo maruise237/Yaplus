@@ -7,3 +7,13 @@ export function WhatsAppIcon({ className, ...props }: React.ComponentProps<"svg"
     </svg>
   );
 }
+
+// Le logo aux couleurs de WhatsApp (vert #25D366, glyphe blanc), pour les liens vers le support :
+// on reconnaît l'app d'un coup d'œil. La taille vient de `className`, le glyphe en prend 60 %.
+export function WhatsAppMark({ className }: { className?: string }) {
+  return (
+    <span className={`inline-grid shrink-0 place-items-center rounded-full bg-[#25D366] text-white ${className ?? ""}`} aria-hidden>
+      <WhatsAppIcon className="size-[60%]" />
+    </span>
+  );
+}

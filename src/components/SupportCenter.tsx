@@ -7,7 +7,7 @@ import { LogoMark } from "@/components/AppShell";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { WhatsAppIcon } from "@/components/WhatsAppIcon";
+import { WhatsAppMark } from "@/components/WhatsAppIcon";
 import { useSupportWhatsapp } from "@/hooks/use-support-whatsapp";
 import { isCloudConfigured } from "@/lib/cloud";
 import { FAQ, loadSupport, sendSupport, SUPPORT_MAX_LENGTH, SUPPORT_TOPICS, type SupportThread, type SupportTopic } from "@/lib/support";
@@ -45,7 +45,7 @@ export function SupportCenter({
   const [topic, setTopic] = useState<SupportTopic | null>(null);
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
   const [searchFocus, setSearchFocus] = useState(false);
-  const height = useVisualHeight(open);
+  const viewport = useVisualViewport(open);
 
 
   // La conversation est relue à l'ouverture, puis toutes les 15 s tant qu'elle est à l'écran.
@@ -87,8 +87,8 @@ export function SupportCenter({
         aria-describedby={undefined}
         // Le focus va au panneau, pas au bouton Fermer : pas d'anneau affiché au simple tap.
         onOpenAutoFocus={(e) => (e.preventDefault(), (e.currentTarget as HTMLElement).focus())}
-        style={height ? ({ "--vvh": `${height}px` } as React.CSSProperties) : undefined}
-        className="top-0 left-0 flex h-[var(--vvh,100dvh)] max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none bg-background p-0 text-base ring-0 sm:max-w-none md:top-1/2 md:left-1/2 md:h-[min(46rem,calc(100dvh-4rem))] md:w-[26rem] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:ring-1"
+        style={viewport ? ({ "--vvt": `${viewport.top}px`, "--vvh": `${viewport.height}px` } as React.CSSProperties) : undefined}
+        className="top-[var(--vvt,0px)] left-0 flex h-[var(--vvh,100dvh)] max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none bg-background p-0 text-base ring-0 sm:max-w-none md:top-1/2 md:left-1/2 md:h-[min(46rem,calc(100dvh-4rem))] md:w-[26rem] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:ring-1"
       >
         <div className="min-h-0 flex-1">
           {view === "home" && (
@@ -235,7 +235,7 @@ function Home({
                 <span className="block font-semibold">Écrire au support</span>
                 <span className="block text-[15px] text-muted-foreground">Sur WhatsApp. {DELAY}</span>
               </span>
-              <WhatsAppIcon className="size-6 shrink-0 text-primary" />
+              <WhatsAppMark className="size-9" />
             </a>
           )
         )}
@@ -388,8 +388,8 @@ function Conversation({
           </div>
         </div>
         {whatsappHref && (
-          <a href={whatsappHref} target="_blank" rel="noreferrer" className="grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" aria-label="Écrire plutôt sur WhatsApp">
-            <WhatsAppIcon className="size-[22px]" />
+          <a href={whatsappHref} target="_blank" rel="noreferrer" className="grid size-11 place-items-center rounded-full transition-colors hover:bg-accent" aria-label="Écrire plutôt sur WhatsApp">
+            <WhatsAppMark className="size-8" />
           </a>
         )}
         <CloseButton className="text-muted-foreground hover:bg-accent hover:text-foreground" />
@@ -538,8 +538,8 @@ function Help({
   const contactButton =
     contact &&
     ("href" in contact ? (
-      <a href={contact.href} target="_blank" rel="noreferrer" className={contactClass}>
-        <WhatsAppIcon className="size-5" />
+      <a href={contact.href} target="_blank" rel="noreferrer" className={whatsappClass}>
+        <WhatsAppMark className="size-7" />
         {contact.label}
       </a>
     ) : (
@@ -619,16 +619,22 @@ function Help({
 const contactClass =
   "inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-medium text-primary-foreground transition-opacity hover:opacity-90 outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 
-// Hauteur visible quand le clavier s'ouvre : la zone de saisie reste au-dessus du clavier.
-function useVisualHeight(active: boolean): number | null {
-  const [height, setHeight] = useState<number | null>(null);
+// Le lien WhatsApp garde le vert de WhatsApp sur son logo : le bouton reste neutre autour.
+const whatsappClass =
+  "inline-flex h-12 items-center justify-center gap-2.5 rounded-xl border bg-card px-5 text-base font-medium transition-colors hover:bg-accent outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+
+// Partie visible quand le clavier s'ouvre : le navigateur fait défiler la page pour montrer la saisie,
+// la fenêtre suit ce décalage et prend la hauteur restante, la zone de saisie reste au-dessus du clavier.
+function useVisualViewport(active: boolean): { top: number; height: number } | null {
+  const [box, setBox] = useState<{ top: number; height: number } | null>(null);
   useEffect(() => {
     const vv = window.visualViewport;
     if (!active || !vv) return;
-    const update = () => setHeight(vv.height);
+    const update = () => setBox({ top: vv.offsetTop, height: vv.height });
     update();
     vv.addEventListener("resize", update);
-    return () => vv.removeEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => (vv.removeEventListener("resize", update), vv.removeEventListener("scroll", update));
   }, [active]);
-  return height;
+  return box;
 }
