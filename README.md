@@ -52,8 +52,12 @@ La base n'est jamais exposée aux téléphones ; les droits par boutique sont v�
 - Mot de passe oublié : le bouton de la connexion ouvre WhatsApp vers le support, avec le numéro tapé. L'admin vérifie
   (le message vient-il de ce numéro ?), puis crée dans Comptes un lien à usage unique (24 heures, annulable, seule
   l'empreinte est en base) envoyé sur le WhatsApp du compte. Le lien ouvre `/nouveau-mot-de-passe#<jeton>`.
-- Support : Boutique, puis Aide. Une conversation par compte (`support_threads`, `support_messages`), réponses
-  dans l'onglet Support du panneau. Le numéro WhatsApp du support se règle dans Réglages (`app_settings`).
+- Centre d'aide (`src/components/SupportCenter.tsx`) : bouton casque en haut du téléphone (il s'allonge en
+  « Besoin d'aide ? » à chaque arrivée sur le Cahier), Boutique puis Aide, et « Besoin d'aide ? » à la connexion.
+  Accueil, Messages, Aide : questions fréquentes lisibles sans réseau (`FAQ` dans `src/lib/support.ts`), sujet choisi
+  en un tap avant d'écrire (`support_messages.topic`). Une conversation par compte (`support_threads`,
+  `support_messages`), réponses dans l'onglet Support du panneau, filtrables par sujet, avec des réponses toutes faites.
+  Le numéro WhatsApp du support se règle dans Réglages (`app_settings`).
 - Mise en place : `node scripts/admin-setup.mjs 2376XXXXXXXX`, copier les trois variables dans Vercel, puis `npm run db:migrate`.
   Sans ces variables, le panneau n'existe pas.
 
@@ -92,6 +96,5 @@ npm run build
 
 ## Reste à faire (plan de build)
 
-- Mot de passe oublié : réinitialisation par le patron (route serveur), à construire.
 - Test terrain réseau coupé sur un vrai Android, empaquetage Play Store (Trusted Web Activity).
 - Notifications push web (rappels) — la v1 s'appuie sur le marqueur « oublié la dernière fois ».

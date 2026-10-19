@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { isSupportTopic, SUPPORT_TOPICS, type SupportTopic } from "@/lib/support";
 import { cn } from "@/lib/utils";
 import { adminConfig, currentAdmin } from "@/server/admin";
 import { query } from "@/server/db";
 import { ago, formatPhone } from "../format";
 
-export default async function AdminSupport() {
+export default async function AdminSupport({ searchParams }: { searchParams: Promise<{ sujet?: string }> }) {
   const config = adminConfig();
   if (!config || !(await currentAdmin())) return null;
+  const { sujet } = await searchParams;
+  const filter: SupportTopic | null = isSupportTopic(sujet) ? sujet : null;
 
   const threads = await query<{
     user_id: string;
@@ -18,23 +21,51 @@ export default async function AdminSupport() {
     last_body: string;
     last_from_admin: boolean;
     shop_name: string | null;
+    topic: string | null;
   }>(`
     select t.user_id, u.display_name, u.phone, t.last_at, t.closed_at, last.body as last_body, last.from_admin as last_from_admin,
       (select s.name from support_messages m join shops s on s.id = m.shop_id
-        where m.user_id = t.user_id order by m.at desc limit 1) as shop_name
+        where m.user_id = t.user_id order by m.at desc limit 1) as shop_name,
+      topic.topic
     from support_threads t
     join users u on u.id = t.user_id
     cross join lateral (
       select m.body, m.from_admin from support_messages m where m.user_id = t.user_id order by m.at desc, m.id desc limit 1
     ) last
+    left join lateral (
+      select m.topic from support_messages m where m.user_id = t.user_id and m.topic is not null order by m.at desc limit 1
+    ) topic on true
+    where $1::text is null or topic.topic = $1
     order by (t.closed_at is null and not last.from_admin) desc, (t.closed_at is null) desc, t.last_at desc
-    limit 200`);
+    limit 200`,
+    [filter],
+  );
+
+  const chip = (topic: SupportTopic | null, label: string) => (
+    <Link
+      key={label}
+      href={topic ? `${config.base}/support?sujet=${topic}` : `${config.base}/support`}
+      aria-current={filter === topic ? "page" : undefined}
+      className={cn(
+        "inline-flex h-11 items-center rounded-full border px-4 text-[15px] font-medium whitespace-nowrap transition-colors",
+        filter === topic ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:bg-accent",
+      )}
+    >
+      {label}
+    </Link>
+  );
 
   return (
     <>
       <PageHeader title="Support" aside={<span className="text-[15px] text-muted-foreground tabular-nums">{threads.length}</span>} />
+      <nav className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0" aria-label="Sujet">
+        {chip(null, "Tous")}
+        {(Object.keys(SUPPORT_TOPICS) as SupportTopic[]).map((t) => chip(t, SUPPORT_TOPICS[t]))}
+      </nav>
       {threads.length === 0 ? (
-        <p className="text-[15px] text-muted-foreground">Aucun message pour l’instant. Les comptes écrivent depuis Boutique, puis Aide.</p>
+        <p className="text-[15px] text-muted-foreground">
+          {filter ? `Aucune conversation sur « ${SUPPORT_TOPICS[filter]} ».` : "Aucun message pour l’instant. Les comptes écrivent depuis Boutique, puis Aide."}
+        </p>
       ) : (
         <ul className="max-w-3xl divide-y border-y">
           {threads.map((t) => {
@@ -53,7 +84,11 @@ export default async function AdminSupport() {
                       {t.last_from_admin && "Toi : "}
                       {t.last_body}
                     </span>
-                    {t.shop_name && <span className="block truncate text-sm text-muted-foreground">{t.shop_name}</span>}
+                    {(t.shop_name || isSupportTopic(t.topic)) && (
+                      <span className="block truncate text-sm text-muted-foreground">
+                        {[isSupportTopic(t.topic) && SUPPORT_TOPICS[t.topic], t.shop_name].filter(Boolean).join(", ")}
+                      </span>
+                    )}
                   </span>
                   <span className="text-sm md:w-40 md:text-right">
                     <span className={cn("font-medium", waiting ? "text-primary" : "text-muted-foreground")}>

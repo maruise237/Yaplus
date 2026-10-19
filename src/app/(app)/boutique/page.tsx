@@ -4,11 +4,11 @@ import { Check, LifeBuoy, LogOut, Plus, UserPlus } from "lucide-react";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PageHeader } from "@/components/PageHeader";
 import { ResponsiveSheet } from "@/components/ResponsiveSheet";
-import { SupportSheet } from "@/components/SupportSheet";
+import { SupportCenter } from "@/components/SupportCenter";
 import { TextFieldDialog } from "@/components/TextFieldDialog";
 import { Button } from "@/components/ui/button";
 import { createShop, removeMember, renameMember, renameShop } from "@/lib/actions";
@@ -17,7 +17,7 @@ import { db, type ShopMember } from "@/lib/db";
 import { useCurrentShop, useMembers } from "@/lib/hooks";
 import { createInvite, inviteLink } from "@/lib/invites";
 import { saveSession, setCurrentShopId, signOutLocal } from "@/lib/session";
-import { loadSupport } from "@/lib/support";
+import { supportUnread } from "@/lib/support";
 import { syncNow } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
@@ -41,13 +41,8 @@ export default function BoutiquePage() {
   const members = useMembers(shopId);
   const [dialog, setDialog] = useState<null | "shop-name" | "my-name" | "new-shop" | "invite" | "support" | "sign-out">(null);
   const [removing, setRemoving] = useState<ShopMember | null>(null);
-  const [supportReply, setSupportReply] = useState(false);
-  const supportSeen = useCallback(() => setSupportReply(false), []);
-
-  // Une réponse du support pas encore lue se signale ici, dans Aide.
-  useEffect(() => {
-    if (isCloudConfigured) loadSupport().then((t) => setSupportReply(t.unread), () => {});
-  }, []);
+  // Une réponse du support pas encore lue se signale ici, dans Aide (relevée par AppShell).
+  const supportReply = useSyncExternalStore(supportUnread.subscribe, supportUnread.get, () => false);
 
   // Vue patron multi-boutiques : ce qui manque dans chaque boutique, en direct.
   const overview = useLiveQuery(async () => {
@@ -173,11 +168,11 @@ export default function BoutiquePage() {
           >
             <LifeBuoy className="size-5 shrink-0 text-muted-foreground" aria-hidden />
             <span className="min-w-0 flex-1">
-              <span className="block font-medium">Écrire au support</span>
+              <span className="block font-medium">Aide et support</span>
               {supportReply ? (
                 <span className="block text-sm font-semibold text-primary">Le support t’a répondu</span>
               ) : (
-                <span className="block text-sm text-muted-foreground">Une question, un souci ? On te répond ici.</span>
+                <span className="block text-sm text-muted-foreground">Questions fréquentes, ou écris-nous.</span>
               )}
             </span>
           </button>
@@ -228,7 +223,7 @@ export default function BoutiquePage() {
           router.push("/");
         }}
       />
-      <SupportSheet open={dialog === "support"} onOpenChange={(o) => setDialog(o ? "support" : null)} shopId={shopId} onSeen={supportSeen} />
+      <SupportCenter open={dialog === "support"} onOpenChange={(o) => setDialog(o ? "support" : null)} name={session.displayName} shopId={shopId} />
       <InviteSheet open={dialog === "invite"} onOpenChange={(o) => setDialog(o ? "invite" : null)} shopId={shopId} shopName={shop.name} />
       <ConfirmDialog
         open={Boolean(removing)}

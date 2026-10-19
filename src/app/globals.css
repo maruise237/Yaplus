@@ -38,6 +38,10 @@
   --success: #1f8a5b;
   --success-subtle: #eef7f2;
   --success-text: #176b46;
+  /* Bandeau bleu du centre d'aide : blanc 5,26:1, bleu pâle 4,30:1 (grand texte seulement). */
+  --hero: #0a6cc8;
+  --hero-foreground: #ffffff;
+  --hero-muted: #dbeafb;
   --radius: 0.75rem;
 }
 
@@ -65,6 +69,8 @@
     --success: #3dbe84;
     --success-subtle: #1b2c24;
     --success-text: #6fd8a6;
+    --hero: #0b5aa6;
+    --hero-muted: #d6e7fa;
   }
 }
 
@@ -97,6 +103,9 @@
   --color-success: var(--success);
   --color-success-subtle: var(--success-subtle);
   --color-success-text: var(--success-text);
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-muted: var(--hero-muted);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

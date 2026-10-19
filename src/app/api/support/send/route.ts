@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SUPPORT_MAX_LENGTH } from "@/lib/support";
+import { isSupportTopic, SUPPORT_MAX_LENGTH } from "@/lib/support";
 import { fail, loadRoles, readJson, withUser } from "@/server/api";
 import { query } from "@/server/db";
 import { supportThread } from "@/server/support";
@@ -27,7 +27,8 @@ export async function POST(req: Request) {
        on conflict (user_id) do update set last_at = now(), closed_at = null, user_seen_at = now()`,
       [userId],
     );
-    await query("insert into support_messages (user_id, shop_id, author_id, body) values ($1, $2, $1, $3)", [userId, shopId, text]);
+    const topic = isSupportTopic(body?.topic) ? body.topic : null;
+    await query("insert into support_messages (user_id, shop_id, author_id, body, topic) values ($1, $2, $1, $3, $4)", [userId, shopId, text, topic]);
     return NextResponse.json(await supportThread(userId));
   });
 }

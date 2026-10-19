@@ -4,14 +4,16 @@ import { History, LayoutGrid, ShoppingCart, Store, type LucideIcon } from "lucid
 import { MotionConfig } from "motion/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { useCurrentShop, useProducts, useSession } from "@/lib/hooks";
 import { quick } from "@/lib/motion";
 import { seedDemo } from "@/lib/demo";
 import { isCloudConfigured } from "@/lib/cloud";
+import { loadSupport, supportUnread } from "@/lib/support";
 import { startSync } from "@/lib/sync";
 import { cn } from "@/lib/utils";
+import { SupportButton } from "./SupportButton";
 import { SyncStatus } from "./SyncStatus";
 
 const PUBLIC_ROUTES = ["/accueil", "/decouvrir", "/connexion", "/rejoindre", "/nouveau-mot-de-passe"];
@@ -51,6 +53,12 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (session?.mode === "cloud") return startSync();
+  }, [session?.mode]);
+
+  // Réponse du support pas encore lue : un point sur l'onglet Boutique.
+  const supportReply = useSyncExternalStore(supportUnread.subscribe, supportUnread.get, () => false);
+  useEffect(() => {
+    if (session?.mode === "cloud") loadSupport().catch(() => {});
   }, [session?.mode]);
 
   // Lien de démo (?demo=1) : remplit une boutique d'exemple, sur cet appareil uniquement,
@@ -95,10 +103,15 @@ function Shell({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="grid gap-0.5 px-3">
           {NAV.map((item) => (
-            <SideLink key={item.href} item={item} active={item.match(pathname)} count={item.href === "/a-racheter" ? toBuyCount : 0} />
+            <SideLink key={item.href} item={item} active={item.match(pathname)} count={item.href === "/a-racheter" ? toBuyCount : 0} dot={item.href === "/boutique" && supportReply} />
           ))}
         </nav>
         <div className="mt-auto p-4">
+          {session?.mode === "cloud" && (
+            <div className="-mx-1 mb-3">
+              <SupportButton name={current.session.displayName} shopId={current.shop.id} side />
+            </div>
+          )}
           <SyncStatus />
         </div>
       </aside>
@@ -110,7 +123,10 @@ function Shell({ children }: { children: React.ReactNode }) {
             <LogoMark />
             <span className="truncate font-semibold">{current.shop.name}</span>
           </div>
-          <SyncStatus compact />
+          <div className="flex shrink-0 items-center gap-1">
+            <SyncStatus compact />
+            {session?.mode === "cloud" && <SupportButton name={current.session.displayName} shopId={current.shop.id} announce={pathname === "/"} />}
+          </div>
         </header>
 
         <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 md:px-10 md:pt-10 md:pb-16">
@@ -122,7 +138,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-4">
           {NAV.map((item) => (
-            <TabLink key={item.href} item={item} active={item.match(pathname)} count={item.href === "/a-racheter" ? toBuyCount : 0} />
+            <TabLink key={item.href} item={item} active={item.match(pathname)} count={item.href === "/a-racheter" ? toBuyCount : 0} dot={item.href === "/boutique" && supportReply} />
           ))}
         </div>
       </nav>
@@ -130,7 +146,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function TabLink({ item, active, count }: { item: NavItem; active: boolean; count: number }) {
+function TabLink({ item, active, count, dot }: { item: NavItem; active: boolean; count: number; dot: boolean }) {
   const Icon = item.icon;
   return (
     <Link
@@ -148,13 +164,15 @@ function TabLink({ item, active, count }: { item: NavItem; active: boolean; coun
             {count > 99 ? "99+" : count}
           </span>
         )}
+        {dot && <span className="absolute -top-0.5 -right-1 size-2.5 rounded-full bg-primary ring-2 ring-background" />}
       </span>
       {item.label}
+      {dot && <span className="sr-only">, le support t’a répondu</span>}
     </Link>
   );
 }
 
-function SideLink({ item, active, count }: { item: NavItem; active: boolean; count: number }) {
+function SideLink({ item, active, count, dot }: { item: NavItem; active: boolean; count: number; dot: boolean }) {
   const Icon = item.icon;
   return (
     <Link
@@ -168,6 +186,7 @@ function SideLink({ item, active, count }: { item: NavItem; active: boolean; cou
       <Icon className="size-[18px]" strokeWidth={active ? 2.25 : 1.75} aria-hidden />
       <span className="flex-1">{item.label}</span>
       {count > 0 && <span className="text-xs font-semibold text-flag-text tabular-nums">{count}</span>}
+      {dot && <span className="size-2 rounded-full bg-primary" aria-label="Le support t’a répondu" />}
     </Link>
   );
 }

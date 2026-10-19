@@ -78,6 +78,7 @@ create table if not exists support_messages (
   at timestamptz not null default now()
 );
 create index if not exists support_messages_user on support_messages (user_id, at);
+alter table support_messages add column if not exists topic text;  -- sujet choisi en un tap (src/lib/support.ts)
 
 -- ---------------------------------------------------------------------------
 -- Cahier

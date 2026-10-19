@@ -2,6 +2,7 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import { useRef, useState } from "react";
+import { SupportCenter } from "@/components/SupportCenter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ export function SignInForm({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [help, setHelp] = useState(false);
   const [error, setError] = useState<{ message: string; field: AuthField | null } | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
@@ -167,6 +169,19 @@ export function SignInForm({
           {signingUp ? "Se connecter" : "Créer un compte"}
         </button>
       </p>
+
+      {isCloudConfigured && (
+        <>
+          <button
+            type="button"
+            onClick={() => setHelp(true)}
+            className="-mt-3 inline-flex h-11 items-center self-center text-[15px] font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Besoin d’aide ?
+          </button>
+          <SupportCenter open={help} onOpenChange={setHelp} name={null} shopId={null} />
+        </>
+      )}
 
       {!isCloudConfigured && (
         <p className="text-sm text-muted-foreground">Mode démo : le compte et le cahier restent sur ce téléphone, rien n’est envoyé.</p>
