@@ -48,7 +48,7 @@ export default async function AdminAccounts({ searchParams }: { searchParams: Pr
             <li key={u.id} className="flex flex-col gap-3 py-3.5 md:flex-row md:items-center md:gap-6">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">
-                  {u.display_name} <span className="font-normal text-muted-foreground tabular-nums">{formatPhone(u.phone)}</span>
+                  {u.display_name} <span className="font-normal text-muted-foreground tabular-nums whitespace-nowrap">{formatPhone(u.phone)}</span>
                 </p>
                 <p className="truncate text-sm text-muted-foreground">{u.shops ?? "Aucune boutique"}</p>
               </div>

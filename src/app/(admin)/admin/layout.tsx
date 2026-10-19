@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { adminConfig, currentAdmin } from "@/server/admin";
 import { query } from "@/server/db";
 import { signOutAdmin } from "./actions";
-import { AdminNav } from "./AdminNav";
+import { AdminNav, AdminTabs } from "./AdminNav";
 import { AdminSignIn } from "./AdminSignIn";
 
 export const metadata: Metadata = { title: "Yaplus admin", robots: { index: false, follow: false } };
@@ -35,15 +35,15 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
           <span className="font-semibold">Admin</span>
           <AdminNav base={config.base} waiting={waiting} className="ml-4 hidden md:flex" />
           <form action={signOutAdmin} className="ml-auto">
-            <Button type="submit" variant="ghost" size="touch" className="text-muted-foreground">
+            <Button type="submit" variant="ghost" size="touch" className="text-muted-foreground max-md:size-11 max-md:px-0" aria-label="Se déconnecter">
               <LogOut aria-hidden />
-              Se déconnecter
+              <span className="max-md:sr-only">Se déconnecter</span>
             </Button>
           </form>
         </div>
-        <AdminNav base={config.base} waiting={waiting} className="overflow-x-auto px-2 md:hidden" />
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 pt-6 pb-16 sm:px-6 md:pt-10">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-10 md:pb-16">{children}</main>
+      <AdminTabs base={config.base} waiting={waiting} />
     </div>
   );
 }

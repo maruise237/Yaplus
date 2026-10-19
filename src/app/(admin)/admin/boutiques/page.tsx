@@ -59,7 +59,7 @@ export default async function AdminShops() {
                   {s.archived_at && <span className="ml-2 text-sm font-normal text-muted-foreground">archivée</span>}
                 </td>
                 <td className="col-start-1 text-muted-foreground md:py-3.5 md:pr-4 md:text-foreground">
-                  {s.owner_name} <span className="text-muted-foreground tabular-nums">{formatPhone(s.owner_phone)}</span>
+                  {s.owner_name} <span className="text-muted-foreground tabular-nums whitespace-nowrap">{formatPhone(s.owner_phone)}</span>
                 </td>
                 <td className="col-start-1 text-sm text-muted-foreground md:hidden">
                   {plural(s.members, "membre", "membres")}, {plural(s.products, "produit", "produits")}, {s.to_buy} à racheter

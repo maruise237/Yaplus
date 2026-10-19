@@ -78,7 +78,7 @@ export default async function AdminSupport({ searchParams }: { searchParams: Pro
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium">
-                      {t.display_name} <span className="font-normal text-muted-foreground tabular-nums">{formatPhone(t.phone)}</span>
+                      {t.display_name} <span className="font-normal text-muted-foreground tabular-nums whitespace-nowrap">{formatPhone(t.phone)}</span>
                     </span>
                     <span className={cn("block truncate text-[15px]", waiting ? "text-foreground" : "text-muted-foreground")}>
                       {t.last_from_admin && "Toi : "}

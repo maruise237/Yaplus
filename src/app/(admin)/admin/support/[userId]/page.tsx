@@ -40,7 +40,7 @@ export default async function AdminSupportThread({ params }: { params: Promise<{
   const notify = `Bonjour ${thread.display_name}, le support Yaplus t’a répondu. Ouvre Yaplus, onglet Boutique, puis Aide.`;
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl max-md:flex max-md:-mb-[calc(6rem+env(safe-area-inset-bottom))] max-md:min-h-[calc(100dvh-5rem)] max-md:flex-col">
       <PageHeader
         title={thread.display_name}
         leading={
@@ -49,18 +49,26 @@ export default async function AdminSupportThread({ params }: { params: Promise<{
           </Link>
         }
       />
-      <div className="-mt-3 mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 md:-mt-5">
+      <div className="-mt-3 mb-6 grid gap-1 md:-mt-5">
         <p className="text-[15px] text-muted-foreground">
           <span className="tabular-nums">{formatPhone(thread.phone)}</span>
           {thread.shops && <span>, {thread.shops}</span>}
         </p>
-        <a href={whatsappLink(notify, thread.phone)} target="_blank" rel="noreferrer" className={cn(buttonVariants({ variant: "ghost", size: "touch" }), "-ml-4 text-primary")}>
-          <WhatsAppIcon aria-hidden />
-          Le prévenir sur WhatsApp
-        </a>
+        {thread.closed_at && <p className="text-sm text-muted-foreground">Réglé {ago(thread.closed_at)}</p>}
+        <div className="-ml-4 flex flex-wrap items-center gap-x-1">
+          <a href={whatsappLink(notify, thread.phone)} target="_blank" rel="noreferrer" className={cn(buttonVariants({ variant: "ghost", size: "touch" }), "text-primary")}>
+            <WhatsAppIcon aria-hidden />
+            Le prévenir sur WhatsApp
+          </a>
+          <form action={setSupportClosed.bind(null, userId, !thread.closed_at)}>
+            <Button type="submit" variant="ghost" size="touch" className="text-muted-foreground">
+              {thread.closed_at ? "Rouvrir" : "Marquer comme réglé"}
+            </Button>
+          </form>
+        </div>
       </div>
 
-      <ol className="grid gap-3" aria-label="Messages">
+      <ol className="mb-6 grid content-start gap-3 max-md:flex-1" aria-label="Messages">
         {messages.map((m) => (
           <li key={m.id} className={cn("max-w-[85%] rounded-xl px-4 py-3", m.from_admin ? "ml-auto bg-secondary" : "border bg-card")}>
             <p className="text-sm text-muted-foreground">
@@ -73,15 +81,7 @@ export default async function AdminSupportThread({ params }: { params: Promise<{
         ))}
       </ol>
 
-      <div className="mt-6 grid gap-3">
-        <SupportReply userId={userId} name={thread.display_name} />
-        <form action={setSupportClosed.bind(null, userId, !thread.closed_at)} className="flex flex-wrap items-center gap-x-3">
-          <Button type="submit" variant="ghost" size="touch" className="-ml-4 text-muted-foreground">
-            {thread.closed_at ? "Rouvrir la conversation" : "Marquer comme réglé"}
-          </Button>
-          {thread.closed_at && <span className="text-sm text-muted-foreground">Réglé {ago(thread.closed_at)}</span>}
-        </form>
-      </div>
+      <SupportReply userId={userId} name={thread.display_name} count={messages.length} />
     </div>
   );
 }
