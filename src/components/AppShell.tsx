@@ -11,7 +11,7 @@ import { quick } from "@/lib/motion";
 import { seedDemo } from "@/lib/demo";
 import { isCloudConfigured } from "@/lib/cloud";
 import { loadSupport, supportUnread } from "@/lib/support";
-import { startSync } from "@/lib/sync";
+import { startSync, syncNow } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 import { SupportButton } from "./SupportButton";
 import { SyncStatus } from "./SyncStatus";
@@ -68,6 +68,20 @@ function Shell({ children }: { children: React.ReactNode }) {
     if (demo && session === null) void seedDemo();
   }, [demo, session]);
 
+  // Juste après la connexion, les boutiques ne sont pas encore sur le téléphone : on attend la
+  // première synchro avant de conclure « pas de boutique » (sinon on tombe sur Bienvenue ou le code).
+  const [syncedFor, setSyncedFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (session?.mode !== "cloud") return;
+    let live = true;
+    const userId = session.userId;
+    void syncNow().finally(() => live && setSyncedFor(userId));
+    return () => {
+      live = false;
+    };
+  }, [session?.mode, session?.userId]);
+  const shopsKnown = session?.mode !== "cloud" || syncedFor === session.userId;
+
   const isPublic = PUBLIC_ROUTES.includes(pathname);
   const allowsNoShop = NO_SHOP_ROUTES.includes(pathname);
 
@@ -75,10 +89,13 @@ function Shell({ children }: { children: React.ReactNode }) {
     if (session === undefined || current === undefined) return;
     if (demo && !current) return;
     if (session === null && !isPublic) router.replace("/accueil");
+    else if (session && current === null && !shopsKnown) return;
     else if (session && current === null && !allowsNoShop) router.replace("/bienvenue");
     else if (session && current && (pathname === "/accueil" || pathname === "/decouvrir" || pathname === "/connexion" || pathname === "/bienvenue")) router.replace("/");
+    // Connecté depuis « J'ai un code » sans code dans le lien, alors qu'on a déjà une boutique.
+    else if (session && current && pathname === "/rejoindre" && !new URLSearchParams(window.location.search).has("code")) router.replace("/");
     else if (session && current === null && (pathname === "/accueil" || pathname === "/decouvrir")) router.replace("/bienvenue");
-  }, [session, current, isPublic, allowsNoShop, pathname, router, demo]);
+  }, [session, current, shopsKnown, isPublic, allowsNoShop, pathname, router, demo]);
 
   const ready = isPublic || (session && (current || allowsNoShop));
   if (!ready) return <div className="min-h-dvh" aria-busy="true" />;
