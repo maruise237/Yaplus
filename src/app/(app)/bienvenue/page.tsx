@@ -3,12 +3,14 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Wordmark } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { findSiteTemplate, type ShopTemplate } from "@/content/shop-templates";
 import { createShop, SHOP_TEMPLATES } from "@/lib/actions";
+import { getMeta, setMeta } from "@/lib/db";
 import { useSession } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 
@@ -25,14 +27,26 @@ export default function BienvenuePage() {
   const router = useRouter();
   const session = useSession();
   const [name, setName] = useState("");
-  const [template, setTemplate] = useState<Template>("telephonie");
+  const [template, setTemplate] = useState<string>("telephonie");
+  // Modèle choisi sur le site avant l'inscription : proposé en premier, avec ses produits.
+  const [site, setSite] = useState<ShopTemplate | null>(null);
+  useEffect(() => {
+    void getMeta<string>("shopTemplate").then((slug) => {
+      const t = findSiteTemplate(slug);
+      if (!t) return;
+      setSite(t);
+      setTemplate(`site:${t.slug}`);
+    });
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
   const submit = async () => {
     if (!name.trim()) return setError(true);
     setBusy(true);
-    await createShop(name, template);
+    if (site && template === `site:${site.slug}`) await createShop(name, site.slug, { products: true });
+    else await createShop(name, template);
+    if (site) await setMeta("shopTemplate", null);
     router.replace("/");
   };
 
@@ -61,24 +75,27 @@ export default function BienvenuePage() {
           {error && <p className="text-sm text-destructive">Donne un nom à la boutique.</p>}
         </div>
 
-        <fieldset>
+        <fieldset className="min-w-0">
           <legend className="mb-1 text-sm font-medium">Catégories de départ</legend>
           <p className="mb-3 text-sm text-muted-foreground">Tu pourras les renommer ou en ajouter.</p>
           <div className="divide-y overflow-hidden rounded-xl border bg-card" role="radiogroup">
-            {(Object.keys(SHOP_TEMPLATES) as Template[]).map((t) => {
-              const selected = template === t;
+            {[
+              ...(site ? [{ id: `site:${site.slug}`, label: `${site.label}, avec ses produits`, names: site.categories.map((c) => c.name) }] : []),
+              ...(Object.keys(SHOP_TEMPLATES) as Template[]).map((t) => ({ id: t, label: TEMPLATE_LABELS[t], names: SHOP_TEMPLATES[t] })),
+            ].map((t) => {
+              const selected = template === t.id;
               return (
                 <button
                   type="button"
-                  key={t}
+                  key={t.id}
                   role="radio"
                   aria-checked={selected}
-                  onClick={() => setTemplate(t)}
+                  onClick={() => setTemplate(t.id)}
                   className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-accent/60"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block font-medium">{TEMPLATE_LABELS[t]}</span>
-                    {SHOP_TEMPLATES[t].length > 0 && <span className="block truncate text-sm text-muted-foreground">{SHOP_TEMPLATES[t].join(", ")}</span>}
+                    <span className="block font-medium">{t.label}</span>
+                    {t.names.length > 0 && <span className="block truncate text-sm text-muted-foreground">{t.names.join(", ")}</span>}
                   </span>
                   <span
                     className={cn(

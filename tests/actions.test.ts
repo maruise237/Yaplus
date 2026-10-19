@@ -68,3 +68,20 @@ describe("cycle signaler → acheter → clôturer", () => {
     await expect(closeList(shop.id)).rejects.toThrow("owner_only");
   });
 });
+
+describe("création depuis un modèle du site", () => {
+  it("un modèle /modeles apporte ses catégories et ses produits, en stock", async () => {
+    const shop = await createShop("Quincaillerie du Rond-point", "quincaillerie", { products: true });
+    const categories = await db.categories.where("shop_id").equals(shop.id).toArray();
+    const products = await db.products.where("shop_id").equals(shop.id).toArray();
+    expect(categories.map((c) => c.name)).toContain("Plomberie");
+    expect(products.find((p) => p.name === "Coude PVC 32")?.status).toBe("in_stock");
+    expect(products.every((p) => p.flagged_by === null)).toBe(true);
+  });
+
+  it("le choix dans l'app garde seulement les catégories", async () => {
+    const shop = await createShop("Quincaillerie bis", "quincaillerie");
+    expect(await db.categories.where("shop_id").equals(shop.id).count()).toBe(6);
+    expect(await db.products.where("shop_id").equals(shop.id).count()).toBe(0);
+  });
+});

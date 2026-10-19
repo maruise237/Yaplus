@@ -33,6 +33,7 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
+    "@fontsource/outfit": "^5.3.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.5",
     "@types/react": "^19",

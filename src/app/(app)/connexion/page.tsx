@@ -1,13 +1,22 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Wordmark } from "@/components/AppShell";
 import { type AuthMode, SignInForm } from "@/components/SignInForm";
+import { findSiteTemplate } from "@/content/shop-templates";
+import { setMeta } from "@/lib/db";
 
 function Connexion() {
   const router = useRouter();
-  const mode: AuthMode = useSearchParams().get("mode") === "inscription" ? "inscription" : "connexion";
+  const params = useSearchParams();
+  const mode: AuthMode = params.get("mode") === "inscription" ? "inscription" : "connexion";
+
+  // Venu d'une page /modeles : le modèle sera proposé à la création de la boutique.
+  const modele = params.get("modele");
+  useEffect(() => {
+    if (findSiteTemplate(modele)) void setMeta("shopTemplate", modele);
+  }, [modele]);
 
   return (
     <div className="grid gap-8">

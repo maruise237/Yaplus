@@ -1,3 +1,4 @@
+import { findSiteTemplate } from "../content/shop-templates";
 import {
   db,
   type Category,
@@ -82,7 +83,8 @@ export const SHOP_TEMPLATES: Record<string, string[]> = {
   vide: [],
 };
 
-export async function createShop(name: string, template: keyof typeof SHOP_TEMPLATES = "vide"): Promise<Shop> {
+// `products` : modèle choisi sur le site (/modeles), qui apporte aussi ses produits.
+export async function createShop(name: string, template = "vide", { products = false }: { products?: boolean } = {}): Promise<Shop> {
   const session = await requireSession();
   const shop = await write(async (put) => {
     const t = now();
@@ -98,17 +100,39 @@ export async function createShop(name: string, template: keyof typeof SHOP_TEMPL
       updated_at: t,
     };
     await put("shop_members", member);
+    const site = products ? findSiteTemplate(template) : null;
+    const categories = site?.categories ?? (SHOP_TEMPLATES[template] ?? []).map((n) => ({ name: n, products: [] }));
     let position = 0;
-    for (const categoryName of SHOP_TEMPLATES[template] ?? []) {
-      await put("categories", {
+    for (const c of categories) {
+      const category: Category = {
         id: uuid(),
         shop_id: shop.id,
-        name: categoryName,
+        name: c.name,
         position: position++,
         created_by: session.userId,
         archived_at: null,
         updated_at: t,
-      } satisfies Category);
+      };
+      await put("categories", category);
+      for (const productName of c.products) {
+        const product: Product = {
+          id: uuid(),
+          shop_id: shop.id,
+          category_id: category.id,
+          name: productName,
+          name_normalized: normalizeName(productName),
+          status: "in_stock",
+          note: null,
+          flagged_by: null,
+          flagged_at: null,
+          forgotten_count: 0,
+          created_by: session.userId,
+          archived_at: null,
+          updated_at: t,
+        };
+        await put("products", product);
+        await put("product_events", event(product, "created", session.userId));
+      }
     }
     return shop;
   });

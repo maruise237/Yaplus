@@ -1,13 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
+import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
 // Outfit : la police du logotype (kit de marque v1).
 const font = Outfit({ subsets: ["latin"], variable: "--font-app", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Yaplus",
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
   description: "Le cahier de réapprovisionnement partagé de la boutique.",
+  applicationName: SITE_NAME,
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Yaplus", statusBarStyle: "default" },
   icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }], apple: "/apple-touch-icon-180.png" },

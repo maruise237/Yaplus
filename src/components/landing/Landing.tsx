@@ -9,6 +9,9 @@ import { StatusMark } from "@/components/ProductRow";
 import { Button } from "@/components/ui/button";
 import { base, quick } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { NotebookLines, NotebookMargin } from "@/components/site/NotebookLines";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { FAQ } from "./faq";
 import { OfflineDemo } from "./OfflineDemo";
 import { PaperNote } from "./PaperNote";
 import { PhoneDemo } from "./PhoneDemo";
@@ -35,10 +38,7 @@ export function Landing() {
     <div className="min-h-dvh overflow-x-clip bg-background">
       <div className="relative">
         <NotebookLines />
-        {/* Marge du cahier */}
-        <div className="pointer-events-none absolute inset-y-0 left-1/2 w-full max-w-6xl -translate-x-1/2" aria-hidden>
-          <div className="absolute inset-y-0 left-3 w-px bg-flag/35 sm:left-5" />
-        </div>
+        <NotebookMargin />
 
         <header
           className={cn(
@@ -51,6 +51,19 @@ export function Landing() {
               <Wordmark />
             </Link>
             <nav className="flex items-center gap-1 sm:gap-2">
+              {[
+                ["Modèles", "/modeles"],
+                ["Outils", "/outils"],
+                ["Guides", "/guides"],
+              ].map(([label, href]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="hidden h-11 items-center rounded-lg px-3 text-[15px] font-medium text-foreground/80 transition-colors duration-150 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring md:flex"
+                >
+                  {label}
+                </Link>
+              ))}
               <Link
                 href="/connexion"
                 className="flex h-11 items-center rounded-lg px-3 text-[15px] font-medium text-foreground/80 transition-colors duration-150 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
@@ -238,23 +251,7 @@ export function Landing() {
         </div>
       </section>
 
-      <footer className="mx-auto flex max-w-6xl flex-col gap-6 py-10 pr-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pl-7 text-[15px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:pr-8 sm:pl-11 md:pb-10">
-        <div>
-          <Wordmark className="text-foreground" />
-          <p className="mt-2">Y a plus&#8239;? On le note.</p>
-        </div>
-        <nav className="flex flex-wrap gap-x-5">
-          <Link href="/connexion" className="flex h-11 items-center hover:text-foreground">
-            Se connecter
-          </Link>
-          <Link href="/rejoindre" className="flex h-11 items-center hover:text-foreground">
-            Rejoindre une boutique
-          </Link>
-          <Link href="/decouvrir" className="flex h-11 items-center hover:text-foreground">
-            Essayer le geste
-          </Link>
-        </nav>
-      </footer>
+      <SiteFooter className="pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0" />
 
       {/* Téléphone : l'action reste à portée de pouce une fois l'ouverture et la démo passées */}
       <AnimatePresence>
@@ -275,25 +272,6 @@ export function Landing() {
   );
 }
 
-// Les lignes d'écriture d'un cahier Seyès (une forte toutes les quatre), en haut de page,
-// qui s'effacent vers le bas. Seulement horizontales : du papier ligné, pas une grille.
-function NotebookLines() {
-  return (
-    <svg
-      className="pointer-events-none absolute inset-x-0 top-0 h-[64rem] w-full text-brand dark:opacity-70 [mask-image:linear-gradient(to_bottom,black_45%,transparent_95%)] lg:h-[54rem]"
-      aria-hidden
-    >
-      <defs>
-        <pattern id="notebook-lines" width="32" height="32" patternUnits="userSpaceOnUse">
-          <path d="M0 0.5H32" stroke="currentColor" strokeOpacity="0.14" />
-          <path d="M0 8.5H32M0 16.5H32M0 24.5H32" stroke="currentColor" strokeOpacity="0.06" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#notebook-lines)" />
-    </svg>
-  );
-}
-
 function Role({ who, lines, className }: { who: string; lines: string[]; className?: string }) {
   return (
     <div className={className}>
@@ -309,21 +287,3 @@ function Role({ who, lines, className }: { who: string; lines: string[]; classNa
     </div>
   );
 }
-
-const FAQ: [string, string][] = [
-  [
-    "Mes employés n’aiment pas écrire. Ça marche quand même\u202f?",
-    "Oui. Pour signaler, on touche le nom du produit, c’est tout. On écrit seulement pour ajouter un produit nouveau, et l’app propose d’abord ceux qui existent.",
-  ],
-  ["Il faut internet tout le temps\u202f?", "Non. Le cahier s’ouvre et se remplit sans réseau. Tout part dès que la connexion revient."],
-  [
-    "Comment j’ajoute mes employés\u202f?",
-    "Dans l’onglet Boutique, tu crées une invitation et tu l’envoies sur WhatsApp. Le lien est valable 24 heures, pour une personne.",
-  ],
-  [
-    "Sur quel téléphone ça marche\u202f?",
-    "Sur tout Android récent avec Chrome, et sur ordinateur. Tu peux l’ajouter à l’écran d’accueil comme une app.",
-  ],
-  ["J’ai plusieurs boutiques.", "Un seul compte suffit. Tu crées une boutique par magasin et tu vois ce qui manque dans chacune."],
-  ["Combien ça coûte\u202f?", "C’est gratuit pendant le lancement, sans carte bancaire."],
-];
