@@ -47,8 +47,13 @@ La base n'est jamais exposée aux téléphones ; les droits par boutique sont v�
 - Accès : un numéro listé dans `ADMIN_PHONES`, le mot de passe de ce compte Yaplus et le code à 6 chiffres
   d'une appli d'authentification (`ADMIN_TOTP_SECRET`). 5 échecs ferment le panneau 15 minutes.
 - Session à part : cookie de 8 heures, envoyé seulement à l'adresse secrète, signé avec une clé distincte de celle du cahier.
-- Contenu : vue d'ensemble (métriques v1 du PRD), boutiques, comptes avec remplacement du mot de passe oublié,
+- Contenu : vue d'ensemble (métriques v1 du PRD), boutiques, comptes, support, réglages,
   journal des actions admin (`admin_events`).
+- Mot de passe oublié : le bouton de la connexion ouvre WhatsApp vers le support, avec le numéro tapé. L'admin vérifie
+  (le message vient-il de ce numéro ?), puis crée dans Comptes un lien à usage unique (24 heures, annulable, seule
+  l'empreinte est en base) envoyé sur le WhatsApp du compte. Le lien ouvre `/nouveau-mot-de-passe#<jeton>`.
+- Support : Boutique, puis Aide. Une conversation par compte (`support_threads`, `support_messages`), réponses
+  dans l'onglet Support du panneau. Le numéro WhatsApp du support se règle dans Réglages (`app_settings`).
 - Mise en place : `node scripts/admin-setup.mjs 2376XXXXXXXX`, copier les trois variables dans Vercel, puis `npm run db:migrate`.
   Sans ces variables, le panneau n'existe pas.
 

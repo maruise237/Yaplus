@@ -1,12 +1,14 @@
 "use client";
 
-import { Check, LogOut, MessageCircle, Plus, UserPlus } from "lucide-react";
+import { Check, LifeBuoy, LogOut, Plus, UserPlus } from "lucide-react";
+import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PageHeader } from "@/components/PageHeader";
 import { ResponsiveSheet } from "@/components/ResponsiveSheet";
+import { SupportSheet } from "@/components/SupportSheet";
 import { TextFieldDialog } from "@/components/TextFieldDialog";
 import { Button } from "@/components/ui/button";
 import { createShop, removeMember, renameMember, renameShop } from "@/lib/actions";
@@ -15,6 +17,7 @@ import { db, type ShopMember } from "@/lib/db";
 import { useCurrentShop, useMembers } from "@/lib/hooks";
 import { createInvite, inviteLink } from "@/lib/invites";
 import { saveSession, setCurrentShopId, signOutLocal } from "@/lib/session";
+import { loadSupport } from "@/lib/support";
 import { syncNow } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
@@ -36,8 +39,15 @@ export default function BoutiquePage() {
   const current = useCurrentShop();
   const shopId = current?.shop.id;
   const members = useMembers(shopId);
-  const [dialog, setDialog] = useState<null | "shop-name" | "my-name" | "new-shop" | "invite" | "sign-out">(null);
+  const [dialog, setDialog] = useState<null | "shop-name" | "my-name" | "new-shop" | "invite" | "support" | "sign-out">(null);
   const [removing, setRemoving] = useState<ShopMember | null>(null);
+  const [supportReply, setSupportReply] = useState(false);
+  const supportSeen = useCallback(() => setSupportReply(false), []);
+
+  // Une réponse du support pas encore lue se signale ici, dans Aide.
+  useEffect(() => {
+    if (isCloudConfigured) loadSupport().then((t) => setSupportReply(t.unread), () => {});
+  }, []);
 
   // Vue patron multi-boutiques : ce qui manque dans chaque boutique, en direct.
   const overview = useLiveQuery(async () => {
@@ -155,6 +165,24 @@ export default function BoutiquePage() {
           )}
         </Section>
 
+        <Section title="Aide">
+          <button
+            type="button"
+            onClick={() => setDialog("support")}
+            className="flex min-h-16 w-full items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:bg-accent/60"
+          >
+            <LifeBuoy className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">Écrire au support</span>
+              {supportReply ? (
+                <span className="block text-sm font-semibold text-primary">Le support t’a répondu</span>
+              ) : (
+                <span className="block text-sm text-muted-foreground">Une question, un souci ? On te répond ici.</span>
+              )}
+            </span>
+          </button>
+        </Section>
+
         <Section title="Compte">
           <div className="grid gap-2 sm:flex">
             <Button variant="outline" size="touch" onClick={() => setDialog("new-shop")}>
@@ -200,6 +228,7 @@ export default function BoutiquePage() {
           router.push("/");
         }}
       />
+      <SupportSheet open={dialog === "support"} onOpenChange={(o) => setDialog(o ? "support" : null)} shopId={shopId} onSeen={supportSeen} />
       <InviteSheet open={dialog === "invite"} onOpenChange={(o) => setDialog(o ? "invite" : null)} shopId={shopId} shopName={shop.name} />
       <ConfirmDialog
         open={Boolean(removing)}
@@ -259,7 +288,7 @@ function InviteSheet({ open, onOpenChange, shopId, shopName }: { open: boolean; 
         code ? (
           <Button size="touch-lg" asChild>
             <a href={whatsappLink(`Rejoins le cahier de ${shopName} sur Yaplus : ${inviteLink(code)}`)} target="_blank" rel="noreferrer">
-              <MessageCircle aria-hidden />
+              <WhatsAppIcon aria-hidden />
               Envoyer par WhatsApp
             </a>
           </Button>

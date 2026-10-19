@@ -8,6 +8,9 @@ const ACTIONS: Record<string, string> = {
   sign_in: "Connexion",
   sign_out: "Déconnexion",
   reset_password: "Mot de passe remplacé",
+  reset_link_created: "Lien de mot de passe créé",
+  reset_link_cancelled: "Lien de mot de passe annulé",
+  support_number_changed: "Numéro du support changé",
 };
 
 export default async function AdminOverview() {

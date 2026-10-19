@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle } from "lucide-react";
+import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { StatusMark } from "@/components/ProductRow";
@@ -68,7 +68,7 @@ export function TryItDemo({ shopName = "Boutique Akwa" }: { shopName?: string })
       {/* Ce que reçoit le fournisseur */}
       <div className="grid gap-1.5 pt-1" aria-live="polite">
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <MessageCircle className="size-4" aria-hidden />
+          <WhatsAppIcon className="size-4" aria-hidden />
           Ce que reçoit ton fournisseur sur WhatsApp
         </p>
         <div className="max-w-[88%] rounded-xl rounded-tl-sm bg-card px-3.5 pt-2.5 pb-2 shadow-[0_1px_2px_rgb(0_0_0/0.08)]">

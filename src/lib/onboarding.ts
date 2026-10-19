@@ -1,10 +1,11 @@
 import type { LucideIcon } from "lucide-react";
-import { ClipboardList, Eye, MessageCircle, Store, Users } from "lucide-react";
+import { ClipboardList, Eye, Store, Users } from "lucide-react";
+import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 
 // Ce que le patron attend en priorité ; la réponse choisit le « avant / après » montré ensuite.
 export type Goal = {
   id: string;
-  icon: LucideIcon;
+  icon: LucideIcon | typeof WhatsAppIcon;
   label: string;
   before: string;
   after: string;
@@ -27,7 +28,7 @@ export const GOALS: Goal[] = [
   },
   {
     id: "whatsapp",
-    icon: MessageCircle,
+    icon: WhatsAppIcon,
     label: "Envoyer la liste au fournisseur plus vite",
     before: "Je recopie la liste à la main avant de l’envoyer sur WhatsApp.",
     after: "Un bouton ouvre WhatsApp avec la liste prête, rangée par catégorie.",

@@ -14,7 +14,7 @@ import { startSync } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 import { SyncStatus } from "./SyncStatus";
 
-const PUBLIC_ROUTES = ["/accueil", "/decouvrir", "/connexion", "/rejoindre"];
+const PUBLIC_ROUTES = ["/accueil", "/decouvrir", "/connexion", "/rejoindre", "/nouveau-mot-de-passe"];
 const NO_SHOP_ROUTES = ["/bienvenue", "/rejoindre"];
 
 type NavItem = { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean };

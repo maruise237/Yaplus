@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { currentAdmin } from "@/server/admin";
 import { query } from "@/server/db";
 import { ago, formatPhone } from "../format";
-import { ResetPassword } from "./ResetPassword";
+import { ResetLink } from "./ResetLink";
 
 export default async function AdminAccounts({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   if (!(await currentAdmin())) return null;
@@ -13,12 +13,14 @@ export default async function AdminAccounts({ searchParams }: { searchParams: Pr
   const q = String((await searchParams).q ?? "").trim().slice(0, 60);
   const escaped = q.replace(/[\\%_]/g, "\\$&");
   const digits = q.replace(/\D/g, "");
-  const users = await query<{ id: string; display_name: string; phone: string; created_at: string; shops: string | null; last_activity: string | null }>(
+  const users = await query<{ id: string; display_name: string; phone: string; created_at: string; shops: string | null; last_activity: string | null; reset_expires: string | null }>(
     `select u.id, u.display_name, u.phone, u.created_at,
        (select string_agg(s.name, ', ' order by s.name) from shops s
          where s.owner_id = u.id
             or exists (select 1 from shop_members m where m.shop_id = s.id and m.user_id = u.id and m.removed_at is null)) as shops,
-       (select max(e.at) from product_events e where e.user_id = u.id) as last_activity
+       (select max(e.at) from product_events e where e.user_id = u.id) as last_activity,
+       (select max(r.expires_at) from password_resets r
+         where r.user_id = u.id and r.used_at is null and r.cancelled_at is null and r.expires_at > now()) as reset_expires
      from users u
      where $1 = '' or u.display_name ilike '%' || $1 || '%' or ($2 <> '' and u.phone like '%' || $2 || '%')
      order by u.created_at desc
@@ -55,7 +57,7 @@ export default async function AdminAccounts({ searchParams }: { searchParams: Pr
                 <br />
                 {u.last_activity ? `Actif ${ago(u.last_activity)}` : "Jamais actif"}
               </p>
-              <ResetPassword userId={u.id} name={u.display_name} phone={u.phone} />
+              <ResetLink userId={u.id} name={u.display_name} phone={u.phone} phoneLabel={formatPhone(u.phone)} expiresIn={u.reset_expires && ago(u.reset_expires)} />
             </li>
           ))}
         </ul>

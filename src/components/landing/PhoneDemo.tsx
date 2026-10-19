@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeft, Check, CheckCheck, History, LayoutGrid, MessageCircle, Pause, Play, Search, ShoppingCart, Store } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, History, LayoutGrid, Pause, Play, Search, ShoppingCart, Store } from "lucide-react";
+import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { AnimatePresence, motion, useInView } from "motion/react";
 import { useEffect, useLayoutEffect, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { LogoMark } from "@/components/AppShell";
@@ -491,7 +492,7 @@ function ToBuyScreen({ state, ids }: { state: State; ids: string[] }) {
             state.sent ? "border-success/40 bg-success-subtle text-success-text" : "bg-card",
           )}
         >
-          {state.sent ? <Check className="size-4" aria-hidden /> : <MessageCircle className="size-4" aria-hidden />}
+          {state.sent ? <Check className="size-4" aria-hidden /> : <WhatsAppIcon className="size-4" aria-hidden />}
           {state.sent ? "Envoyé" : "Envoyer"}
         </span>
         <span className="flex h-10 flex-1 items-center justify-center rounded-xl bg-primary text-[13px] font-medium text-primary-foreground">Clôturer</span>
@@ -577,7 +578,7 @@ function WhatsAppBubble({ ids }: { ids: string[] }) {
     >
       <div className="rounded-2xl rounded-tr-md bg-[#d9fdd3] px-3.5 pt-2 pb-1.5 text-[#1f2a24] shadow-[0_12px_32px_-12px_rgb(16_40_80/0.35),0_2px_6px_-2px_rgb(16_40_80/0.15)] dark:bg-[#005c4b] dark:text-[#e9f5ef]">
         <p className="mb-1 flex items-center gap-1.5 border-b border-current/10 pb-1.5 text-[12px] font-medium opacity-75">
-          <MessageCircle className="size-3.5" />
+          <WhatsAppIcon className="size-3.5" />
           Envoyé à Ets Ngono, fournisseur
         </p>
         <p className="text-[13px] leading-relaxed">

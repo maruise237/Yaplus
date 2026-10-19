@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LogoMark } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { adminConfig, currentAdmin } from "@/server/admin";
+import { query } from "@/server/db";
 import { signOutAdmin } from "./actions";
 import { AdminNav } from "./AdminNav";
 import { AdminSignIn } from "./AdminSignIn";
@@ -21,13 +22,18 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
     );
   }
 
+  const [{ waiting }] = await query<{ waiting: number }>(`
+    select count(*)::int as waiting from support_threads t
+    where t.closed_at is null
+      and not (select m.from_admin from support_messages m where m.user_id = t.user_id order by m.at desc, m.id desc limit 1)`);
+
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <LogoMark />
           <span className="font-semibold">Admin</span>
-          <AdminNav base={config.base} className="ml-4 hidden md:flex" />
+          <AdminNav base={config.base} waiting={waiting} className="ml-4 hidden md:flex" />
           <form action={signOutAdmin} className="ml-auto">
             <Button type="submit" variant="ghost" size="touch" className="text-muted-foreground">
               <LogOut aria-hidden />
@@ -35,7 +41,7 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
             </Button>
           </form>
         </div>
-        <AdminNav base={config.base} className="px-2 md:hidden" />
+        <AdminNav base={config.base} waiting={waiting} className="overflow-x-auto px-2 md:hidden" />
       </header>
       <main className="mx-auto w-full max-w-6xl px-4 pt-6 pb-16 sm:px-6 md:pt-10">{children}</main>
     </div>

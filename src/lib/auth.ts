@@ -1,7 +1,7 @@
 import { MIN_PASSWORD_LENGTH } from "./auth-rules";
 import { api, ApiError, isCloudConfigured } from "./cloud";
 import { getMeta, setMeta } from "./db";
-import { saveSession } from "./session";
+import { getSession, saveSession, signOutLocal } from "./session";
 import { syncNow } from "./sync";
 import { normalizePhone } from "./whatsapp";
 
@@ -67,6 +67,28 @@ export async function signIn({ phone, password }: { phone: string; password: str
     invalid_credentials: new AuthError("Numéro ou mot de passe incorrect."),
     too_many_attempts: new AuthError("Trop d’essais. Attends 15 minutes, puis réessaie."),
   });
+  await saveSession({ ...user, mode: "cloud" });
+  await syncNow();
+}
+
+// Lien « nouveau mot de passe » envoyé par le support sur WhatsApp (src/app/api/auth/reset).
+export const DEAD_LINK = new AuthError("Ce lien ne marche plus.");
+
+export async function checkResetLink(token: string): Promise<{ displayName: string; phone: string }> {
+  try {
+    return await api("/api/auth/reset", { token });
+  } catch (e) {
+    if (e instanceof ApiError && e.code === "invalid_link") throw DEAD_LINK;
+    if (e instanceof ApiError && e.offline) throw new AuthError("Pas de réseau. Ce lien demande internet.");
+    throw new AuthError("Le serveur ne répond pas. Réessaie dans un instant.");
+  }
+}
+
+export async function resetWithLink(token: string, password: string) {
+  requirePassword(password);
+  const user = await callAuth("/api/auth/reset", { token, password }, { invalid_link: DEAD_LINK });
+  const previous = await getSession();
+  if (previous && previous.userId !== user.userId) await signOutLocal();
   await saveSession({ ...user, mode: "cloud" });
   await syncNow();
 }

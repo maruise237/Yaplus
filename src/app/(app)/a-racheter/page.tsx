@@ -1,6 +1,7 @@
 "use client";
 
-import { MessageCircle, MoreVertical, RotateCcw } from "lucide-react";
+import { MoreVertical, RotateCcw } from "lucide-react";
+import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -76,7 +77,7 @@ export default function ARacheterPage() {
   const actions = (
     <>
       <Button variant="outline" size="touch-lg" className="flex-1 md:flex-none" onClick={() => setSharing(true)} disabled={left === 0}>
-        <MessageCircle aria-hidden />
+        <WhatsAppIcon aria-hidden />
         Envoyer
       </Button>
       {current.isOwner && (
@@ -260,7 +261,7 @@ function ShareSheet({
       description="WhatsApp s’ouvre avec le message prêt, rangé par catégorie."
       footer={
         <Button size="touch-lg" onClick={() => void send()}>
-          <MessageCircle aria-hidden />
+          <WhatsAppIcon aria-hidden />
           Ouvrir WhatsApp
         </Button>
       }

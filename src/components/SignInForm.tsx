@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthError, type AuthField, MIN_PASSWORD_LENGTH, signIn, signUp } from "@/lib/auth";
 import { isCloudConfigured } from "@/lib/cloud";
+import { useSupportWhatsapp } from "@/hooks/use-support-whatsapp";
+import { forgotPasswordLink } from "@/lib/support";
 
 export type AuthMode = "inscription" | "connexion";
 
@@ -19,6 +21,7 @@ function FieldError({ id, children }: { id: string; children: React.ReactNode })
 }
 
 // Numéro + mot de passe, sans code à attendre : rien n'est envoyé par SMS ou WhatsApp.
+// Mot de passe oublié : on écrit au support sur WhatsApp, qui renvoie un lien à usage unique.
 export function SignInForm({
   mode,
   onModeChange,
@@ -38,6 +41,8 @@ export function SignInForm({
   const phoneRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const signingUp = mode === "inscription";
+  // Ouvre WhatsApp vers le support, avec le numéro déjà tapé : le support envoie un lien sur ce numéro.
+  const forgotLink = forgotPasswordLink(useSupportWhatsapp(), phone);
 
   const submit = async () => {
     setBusy(true);
@@ -135,6 +140,11 @@ export function SignInForm({
               {MIN_PASSWORD_LENGTH} caractères minimum. Des chiffres suffisent, garde-le pour toi.
             </p>
           )
+        )}
+        {!signingUp && forgotLink && (
+          <a href={forgotLink} target="_blank" rel="noreferrer" className="-my-1.5 inline-flex h-11 items-center self-start text-[15px] font-medium text-primary underline-offset-4 hover:underline">
+            Mot de passe oublié ?
+          </a>
         )}
       </div>
 

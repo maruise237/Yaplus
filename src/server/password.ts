@@ -1,4 +1,4 @@
-import { randomBytes, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } from "node:crypto";
+import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } from "node:crypto";
 
 // scrypt, intégré à Node : pas de dépendance native à compiler sur Vercel.
 const PARAMS = { N: 16384, r: 8, p: 1 };
@@ -23,4 +23,14 @@ export async function verifyPassword(password: string, stored: string): Promise<
   const expected = Buffer.from(hash, "base64url");
   const key = await scrypt(password, Buffer.from(salt, "base64url"), { N: Number(n), r: Number(r), p: Number(p) });
   return key.length === expected.length && timingSafeEqual(key, expected);
+}
+
+// Jeton d'un lien « nouveau mot de passe » : on ne garde que son empreinte en base.
+export function newResetToken(): { token: string; hash: string } {
+  const token = randomBytes(32).toString("base64url");
+  return { token, hash: resetTokenHash(token) };
+}
+
+export function resetTokenHash(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }

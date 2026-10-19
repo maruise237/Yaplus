@@ -28,7 +28,7 @@ create table if not exists auth_failures (
 );
 create index if not exists auth_failures_phone_at on auth_failures (phone, at);
 
--- Journal du panneau d'administration : qui s'est connecté, quel mot de passe a été remplacé.
+-- Journal du panneau d'administration : qui s'est connecté, quel lien de mot de passe a été créé.
 create table if not exists admin_events (
   id bigint generated always as identity primary key,
   at timestamptz not null default now(),
@@ -37,6 +37,47 @@ create table if not exists admin_events (
   target text,
   ip text
 );
+
+-- Liens « nouveau mot de passe » créés par l'admin après vérification sur WhatsApp.
+-- Seule l'empreinte du jeton est gardée : le lien lui-même n'est montré qu'une fois.
+create table if not exists password_resets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users (id),
+  token_hash text not null unique,
+  created_by uuid not null references users (id),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '24 hours',
+  used_at timestamptz,
+  cancelled_at timestamptz
+);
+create index if not exists password_resets_user on password_resets (user_id);
+
+-- Réglages modifiables depuis le panneau d'administration (ex. numéro WhatsApp du support).
+create table if not exists app_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references users (id)
+);
+
+-- Support : une conversation par compte, comme un fil WhatsApp.
+create table if not exists support_threads (
+  user_id uuid primary key references users (id),
+  last_at timestamptz not null default now(),
+  closed_at timestamptz,                 -- posé par l'admin ; un nouveau message rouvre
+  user_seen_at timestamptz               -- pour signaler une réponse pas encore lue
+);
+
+create table if not exists support_messages (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references support_threads (user_id),
+  shop_id uuid references shops (id),    -- boutique ouverte au moment du message
+  from_admin boolean not null default false,
+  author_id uuid not null references users (id),
+  body text not null,
+  at timestamptz not null default now()
+);
+create index if not exists support_messages_user on support_messages (user_id, at);
 
 -- ---------------------------------------------------------------------------
 -- Cahier
